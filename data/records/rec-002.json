@@ -1,0 +1,8 @@
+{
+  "id": "rec-002",
+  "title": "Customer list (confidential)",
+  "version": 7,
+  "updated_at": "2026-10-15",
+  "allowed_roles": ["manager"],
+  "content": "Fictional sample data. Acme Ltd, contact j.doe@acme.example, contract value 120k. Globex BV, contact m.smith@globex.example, contract value 85k."
+}

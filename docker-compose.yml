@@ -1,0 +1,80 @@
+# LLM-Harnass: a teaching harness around a local open-weight model.
+#
+# Network design (lesson 4):
+#   agent_net is INTERNAL: containers on it cannot reach the internet.
+#   The harness lives only on agent_net, so even if every software control
+#   fails, the agent has no route out. Ollama and Jaeger also join the
+#   "internet" network: Ollama to download the model, Jaeger to publish its UI.
+
+name: llm-harness
+
+x-hardening: &hardening
+  read_only: true                       # root filesystem is read-only
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]                       # no Linux capabilities
+  pids_limit: 128
+  mem_limit: 1g
+
+services:
+  ollama:
+    image: ollama/ollama:0.5.7
+    volumes:
+      - ollama-models:/root/.ollama
+    networks: [agent_net, internet]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  # One-shot job: asks the Ollama server to download the model, then exits.
+  model-pull:
+    image: ollama/ollama:0.5.7
+    depends_on:
+      ollama: { condition: service_healthy }
+    environment:
+      OLLAMA_HOST: "ollama:11434"
+    entrypoint: ["ollama", "pull", "${HARNESS_MODEL:-qwen2.5:3b}"]
+    networks: [agent_net]
+    restart: "no"
+
+  # Tracing UI on http://localhost:16686 (lesson 5).
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
+    networks: [agent_net, internet]
+
+  harness:
+    build: .
+    <<: *hardening
+    depends_on:
+      model-pull: { condition: service_completed_successfully }
+      jaeger: { condition: service_started }
+    environment:
+      HARNESS_MODEL: ${HARNESS_MODEL:-qwen2.5:3b}
+      OLLAMA_URL: http://ollama:11434
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      HARNESS_APPROVAL: ${HARNESS_APPROVAL:-prompt}
+    volumes:
+      - ./config:/app/config:ro         # policy and settings: the agent cannot change them
+      - ./data:/app/data:ro             # records and inbox: read-only sources
+      - ./scenarios:/app/scenarios:ro
+      - ./workspace:/workspace          # the ONLY folder the agent's tools may touch
+      - ./var/audit:/audit              # written by the harness, never reachable by tools
+      - ./var/outbox:/outbox            # simulated outgoing email
+    tmpfs:
+      - /tmp
+    networks: [agent_net]
+    stdin_open: true                    # needed for interactive approvals
+    tty: true
+
+networks:
+  agent_net:
+    internal: true
+  internet: {}
+
+volumes:
+  ollama-models: {}

@@ -1,0 +1,61 @@
+<svg viewBox="0 0 960 280" role="img" aria-label="Hosted API versus local weights. With a hosted API, prompts, files and personal data cross a jurisdiction boundary to provider servers on every request. With local weights inside the organisation, data can only leave through an egress gate that denies by default; the loader code for the model file is a separate risk." xmlns="http://www.w3.org/2000/svg" width="960" height="280">
+<style>
+svg { --bg: #ffffff; --sunk: #eceff3; --surface: #ffffff; --ink: #17212c; --muted: #586473; --line: #9aa6b4; --accent: #1f4e8c; --accent-soft: #e5ecf6; --risk: #b42318; --risk-soft: #fbe9e7; --ok: #2f6b3a; --ok-soft: #e6f2e8; }
+@media (prefers-color-scheme: dark) { svg { --bg: #0f151c; --sunk: #151d26; --surface: #18222d; --ink: #e5eaf0; --muted: #9ba7b5; --line: #4f5e6e; --accent: #86ade3; --accent-soft: #1c2a3c; --risk: #f08a7f; --risk-soft: #3a1f1d; --ok: #82c891; --ok-soft: #1b3022; } }
+
+text { fill: var(--ink); font-family: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+       font-size: 13px; }
+.t-lbl { fill: var(--muted); font-size: 11px; }
+.t-ttl { font-weight: 600; font-size: 14px; }
+.t-risk { fill: var(--risk); }
+.bg { fill: var(--bg); }
+.panel { fill: var(--sunk); stroke: none; }
+.box { fill: var(--surface); stroke: var(--line); stroke-width: 1.2; }
+.box-accent { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.2; }
+.box-risk { fill: var(--risk-soft); stroke: var(--risk); stroke-width: 1.2; }
+.box-ok { fill: var(--ok-soft); stroke: var(--ok); stroke-width: 1.2; }
+.boundary { fill: none; stroke: var(--line); stroke-width: 1.2; stroke-dasharray: 6 4; }
+.edge { stroke: var(--ink); stroke-width: 1.4; fill: none; }
+.edge-risk { stroke: var(--risk); stroke-width: 1.4; fill: none; }
+.edge-dash { stroke: var(--line); stroke-width: 1.2; stroke-dasharray: 4 4; fill: none; }
+.ah { fill: var(--ink); }
+.ah-risk { fill: var(--risk); }
+.ah-muted { fill: var(--line); }
+</style>
+<defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0 L10 5 L0 10 z"/></marker>
+    <marker id="ahr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah-risk" d="M0 0 L10 5 L0 10 z"/></marker>
+    <marker id="ahm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah-muted" d="M0 0 L10 5 L0 10 z"/></marker>
+  </defs>
+<rect class="bg" x="0" y="0" width="960" height="280"/>
+
+        <rect class="panel" x="10" y="10" width="455" height="260" rx="8"/>
+        <rect class="panel" x="490" y="10" width="460" height="260" rx="8"/>
+        <text class="t-ttl" x="30" y="40">Hosted API</text>
+        <text class="t-lbl" x="30" y="60">Every request leaves the organisation</text>
+        <rect class="boundary" x="30" y="85" width="175" height="135" rx="6"/>
+        <text class="t-lbl" x="42" y="104">Your organisation</text>
+        <text x="117" y="150" text-anchor="middle">Prompts, files,</text>
+        <text x="117" y="168" text-anchor="middle">personal data</text>
+        <line class="boundary" x1="245" y1="75" x2="245" y2="235"/>
+        <text class="t-lbl" x="245" y="252" text-anchor="middle">jurisdiction boundary</text>
+        <rect class="box-risk" x="290" y="110" width="160" height="85" rx="4"/>
+        <text x="370" y="140" text-anchor="middle">Provider servers</text>
+        <text class="t-lbl" x="370" y="160" text-anchor="middle">provider's law and</text>
+        <text class="t-lbl" x="370" y="176" text-anchor="middle">retention policy</text>
+        <line class="edge-risk" x1="205" y1="152" x2="288" y2="152" marker-end="url(#ahr)"/>
+
+        <text class="t-ttl" x="510" y="40">Local weights</text>
+        <text class="t-lbl" x="510" y="60">Data leaves only through paths the organisation opens</text>
+        <rect class="boundary" x="510" y="78" width="300" height="172" rx="6"/>
+        <text class="t-lbl" x="522" y="97">Your organisation</text>
+        <rect class="box" x="528" y="115" width="110" height="46" rx="4"/><text x="583" y="143" text-anchor="middle">Model weights</text>
+        <rect class="box-accent" x="668" y="115" width="124" height="46" rx="4"/><text x="730" y="136" text-anchor="middle">Harness and</text><text x="730" y="152" text-anchor="middle">tools</text>
+        <line class="edge" x1="638" y1="138" x2="666" y2="138" marker-end="url(#ah)"/>
+        <rect class="box-risk" x="528" y="185" width="110" height="46" rx="4"/><text x="583" y="205" text-anchor="middle">Loader code</text><text class="t-lbl" x="583" y="221" text-anchor="middle">runs at load time</text>
+        <line class="edge-risk" x1="583" y1="185" x2="583" y2="163" marker-end="url(#ahr)"/>
+        <rect class="box-ok" x="835" y="115" width="105" height="46" rx="4"/><text x="887" y="136" text-anchor="middle">Egress gate</text><text class="t-lbl" x="887" y="152" text-anchor="middle">deny by default</text>
+        <line class="edge" x1="792" y1="138" x2="833" y2="138" marker-end="url(#ah)"/>
+        <text class="t-lbl" x="887" y="182" text-anchor="middle">allow-listed</text>
+        <text class="t-lbl" x="887" y="197" text-anchor="middle">domains only</text>
+      </svg>

@@ -1,0 +1,6 @@
+# Lesson 7. A model stuck in a loop. The step limit in harness.yaml stops it.
+description: Never stops listing files.
+steps:
+  - tool: list_files
+    args: {path: "."}
+    repeat: 1000

@@ -1,0 +1,23 @@
+# Every piece of context the model sees has a source and a trust level.
+# The trust level is written on the data block the model receives and in the
+# context manifest of every model call (see harness/context/).
+
+trust_levels:
+  owner: Instructions from the system owner. The only place rules come from.
+  user: The request of the person running the agent.
+  verified: Internal records. Access-checked and versioned.
+  untrusted: Anything from outside or from a tool. Data only, never instructions.
+
+sources:
+  system-rules:
+    trust: owner
+    path: system_prompt.md          # relative to paths.config_dir
+  records:
+    trust: verified
+    path: records                   # relative to paths.data_dir
+  inbox:
+    trust: untrusted
+    path: inbox                     # relative to paths.data_dir
+
+# Output of tools such as read_file, run_command and fetch_url.
+tool_output_trust: untrusted

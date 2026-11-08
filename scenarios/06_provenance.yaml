@@ -1,0 +1,6 @@
+# Lesson 6. A grounded answer with one real and one invented citation.
+description: Search records and cite them.
+steps:
+  - tool: search_records
+    args: {query: pricing}
+  - say: "Discounts are capped at 10 percent [source:records:rec-001]. Above that a VP must sign [source:records:rec-999]."

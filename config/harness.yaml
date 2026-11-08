@@ -1,0 +1,61 @@
+# Main settings. Every control can be switched on or off here for a lesson.
+# ${NAME:-default} reads an environment variable, with a default.
+
+model:
+  provider: ollama                  # ollama | scripted (scripted is set by --scenario)
+  name: ${HARNESS_MODEL:-qwen2.5:3b}
+  url: ${OLLAMA_URL:-http://localhost:11434}
+  temperature: 0                    # lower randomness makes runs easier to compare
+  timeout_seconds: 180
+
+paths:
+  config_dir: ${HARNESS_CONFIG_DIR:-/app/config}
+  data_dir: ${HARNESS_DATA_DIR:-/app/data}
+  workspace: ${HARNESS_WORKSPACE:-/workspace}
+  audit_dir: ${HARNESS_AUDIT_DIR:-/audit}
+  outbox_dir: ${HARNESS_OUTBOX_DIR:-/outbox}
+
+# Risk 14: runaway loops and cost.
+limits:
+  max_steps: 12                     # model calls per session
+  max_seconds: 300                  # wall-clock time per session
+  max_output_chars: 4000            # longer tool output is cut; the full hash is logged
+
+# Risk 2: destructive actions. What happens when the policy says "ask".
+approval:
+  mode: ${HARNESS_APPROVAL:-prompt} # prompt | deny | approve (approve: tests only)
+
+# Risk 7: data exfiltration. fetch_url refuses every host not listed here.
+egress:
+  allowed_domains: []
+
+tools:
+  enabled:
+    - list_files
+    - read_file
+    - write_file
+    - run_command
+    - fetch_url
+    - search_records
+    - read_inbox
+    - send_email
+  run_command:
+    allowed_binaries: [ls, cat, head, wc, grep, python]
+    timeout_seconds: 10
+
+# Risks 17-25: context provenance.
+context:
+  trust_labels: true                # wrap every piece of data with its source and trust level
+  require_citations: true           # the final answer must cite [source:ID] for its facts
+
+# Hooks run before and after every tool call.
+hooks:
+  fail_closed: true                 # a crashing hook blocks the action (lesson 2)
+  enabled:
+    - secret_redactor
+    - injection_flagger
+
+telemetry:
+  enabled: true
+  service_name: llm-harness
+  otlp_endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
