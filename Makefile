@@ -4,7 +4,7 @@ RUN := $(DC) run --rm harness
 # Lint and tests use the source on your disk, mounted read-only: no rebuild needed after edits.
 DEV := $(DC) run --rm --no-deps -v "$(CURDIR):/src:ro" -w /src -e PYTHONPATH=/src
 
-.PHONY: help up down build test lint check run demo-hello demo-policy demo-destructive demo-injection demo-provenance demo-runaway verify policy-check traces clean
+.PHONY: help up down build test lint check run demo-hello demo-policy demo-destructive demo-injection demo-provenance demo-runaway verify policy-check traces diagrams clean
 
 help:            ## Show this list
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-18s %s\n", $$1, $$2}'
@@ -24,9 +24,12 @@ test:            ## Run the unit and scenario tests (no model needed)
 	$(DEV) --entrypoint python harness -m pytest
 
 lint:            ## Check style and Google-style docstrings with flake8
-	$(DEV) --entrypoint flake8 harness harness tests
+	$(DEV) --entrypoint flake8 harness harness tests scripts
 
 check: lint test ## Lint, then test
+
+diagrams:        ## Export the report's figures to docs/diagrams/ (run after editing the report)
+	$(DC) run --rm --no-deps -v "$(CURDIR):/src" -w /src --user "$$(id -u):$$(id -g)" --entrypoint python harness scripts/export_diagrams.py
 
 run:             ## Run a task against the real model: make run TASK="..." ROLE=analyst
 	$(RUN) run --role $(or $(ROLE),analyst) "$(TASK)"

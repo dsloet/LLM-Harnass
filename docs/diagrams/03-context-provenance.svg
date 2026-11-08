@@ -1,0 +1,67 @@
+<svg viewBox="0 0 960 395" role="img" aria-label="Context provenance pipeline. Five sources with different trust levels (system rules, user request, internal records, retrieved documents, and untrusted web, email or tool output) pass through a context assembler that filters by the user's access, attaches trust labels, writes a manifest with id, version, hash and time, and stores the full prompt. The model answers with source IDs, a citation check verifies them, decisions about people go to human review, and every stage writes to an append-only audit store." xmlns="http://www.w3.org/2000/svg" width="960" height="395">
+<style>
+svg { --bg: #ffffff; --sunk: #eceff3; --surface: #ffffff; --ink: #17212c; --muted: #586473; --line: #9aa6b4; --accent: #1f4e8c; --accent-soft: #e5ecf6; --risk: #b42318; --risk-soft: #fbe9e7; --ok: #2f6b3a; --ok-soft: #e6f2e8; }
+@media (prefers-color-scheme: dark) { svg { --bg: #0f151c; --sunk: #151d26; --surface: #18222d; --ink: #e5eaf0; --muted: #9ba7b5; --line: #4f5e6e; --accent: #86ade3; --accent-soft: #1c2a3c; --risk: #f08a7f; --risk-soft: #3a1f1d; --ok: #82c891; --ok-soft: #1b3022; } }
+
+text { fill: var(--ink); font-family: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+       font-size: 13px; }
+.t-lbl { fill: var(--muted); font-size: 11px; }
+.t-ttl { font-weight: 600; font-size: 14px; }
+.t-risk { fill: var(--risk); }
+.bg { fill: var(--bg); }
+.panel { fill: var(--sunk); stroke: none; }
+.box { fill: var(--surface); stroke: var(--line); stroke-width: 1.2; }
+.box-accent { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.2; }
+.box-risk { fill: var(--risk-soft); stroke: var(--risk); stroke-width: 1.2; }
+.box-ok { fill: var(--ok-soft); stroke: var(--ok); stroke-width: 1.2; }
+.boundary { fill: none; stroke: var(--line); stroke-width: 1.2; stroke-dasharray: 6 4; }
+.edge { stroke: var(--ink); stroke-width: 1.4; fill: none; }
+.edge-risk { stroke: var(--risk); stroke-width: 1.4; fill: none; }
+.edge-dash { stroke: var(--line); stroke-width: 1.2; stroke-dasharray: 4 4; fill: none; }
+.ah { fill: var(--ink); }
+.ah-risk { fill: var(--risk); }
+.ah-muted { fill: var(--line); }
+</style>
+<defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0 L10 5 L0 10 z"/></marker>
+    <marker id="ahr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah-risk" d="M0 0 L10 5 L0 10 z"/></marker>
+    <marker id="ahm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah-muted" d="M0 0 L10 5 L0 10 z"/></marker>
+  </defs>
+<rect class="bg" x="0" y="0" width="960" height="395"/>
+
+        <text class="t-ttl" x="20" y="24">Context sources</text>
+        <rect class="box" x="20" y="40" width="205" height="44" rx="4"/><text x="32" y="58">System rules</text><text class="t-lbl" x="32" y="75">trust: owner</text>
+        <rect class="box" x="20" y="95" width="205" height="44" rx="4"/><text x="32" y="113">User request</text><text class="t-lbl" x="32" y="130">trust: user</text>
+        <rect class="box" x="20" y="150" width="205" height="44" rx="4"/><text x="32" y="168">Internal records</text><text class="t-lbl" x="32" y="185">trust: verified, access-checked</text>
+        <rect class="box" x="20" y="205" width="205" height="44" rx="4"/><text x="32" y="223">Retrieved documents</text><text class="t-lbl" x="32" y="240">trust: checked, versioned</text>
+        <rect class="box-risk" x="20" y="260" width="205" height="44" rx="4"/><text x="32" y="278">Web, email, tool output</text><text class="t-lbl" x="32" y="295">trust: untrusted, data only</text>
+
+        <rect class="box-accent" x="270" y="90" width="205" height="175" rx="4"/>
+        <text class="t-ttl" x="284" y="115">Context assembler</text>
+        <text x="284" y="145">1. Filter by user's access</text>
+        <text x="284" y="170">2. Attach trust labels</text>
+        <text x="284" y="195">3. Write manifest:</text>
+        <text class="t-lbl" x="298" y="212">source id, version, hash, time</text>
+        <text x="284" y="240">4. Store the full prompt</text>
+
+        <line class="edge" x1="225" y1="62" x2="268" y2="115" marker-end="url(#ah)"/>
+        <line class="edge" x1="225" y1="117" x2="268" y2="145" marker-end="url(#ah)"/>
+        <line class="edge" x1="225" y1="172" x2="268" y2="175" marker-end="url(#ah)"/>
+        <line class="edge" x1="225" y1="227" x2="268" y2="205" marker-end="url(#ah)"/>
+        <line class="edge-risk" x1="225" y1="282" x2="268" y2="240" marker-end="url(#ahr)"/>
+
+        <rect class="box" x="510" y="148" width="96" height="56" rx="4"/><text x="558" y="181" text-anchor="middle">Model</text>
+        <line class="edge" x1="475" y1="176" x2="508" y2="176" marker-end="url(#ah)"/>
+        <rect class="box" x="640" y="148" width="140" height="56" rx="4"/><text x="710" y="172" text-anchor="middle">Answer with</text><text x="710" y="190" text-anchor="middle">source IDs</text>
+        <line class="edge" x1="606" y1="176" x2="638" y2="176" marker-end="url(#ah)"/>
+        <rect class="box-accent" x="812" y="148" width="130" height="56" rx="4"/><text x="877" y="172" text-anchor="middle">Citation check</text><text class="t-lbl" x="877" y="190" text-anchor="middle">IDs exist, quotes match</text>
+        <line class="edge" x1="780" y1="176" x2="810" y2="176" marker-end="url(#ah)"/>
+        <rect class="box" x="812" y="245" width="130" height="50" rx="4"/><text x="877" y="266" text-anchor="middle">Human review</text><text class="t-lbl" x="877" y="283" text-anchor="middle">decisions about people</text>
+        <line class="edge" x1="877" y1="204" x2="877" y2="243" marker-end="url(#ah)"/>
+
+        <rect class="box" x="270" y="335" width="672" height="44" rx="4"/><text x="606" y="362" text-anchor="middle">Append-only audit store: context, manifest, output, check result, reviewer</text>
+        <line class="edge-dash" x1="372" y1="265" x2="372" y2="333" marker-end="url(#ahm)"/>
+        <line class="edge-dash" x1="558" y1="204" x2="558" y2="333" marker-end="url(#ahm)"/>
+        <line class="edge-dash" x1="710" y1="204" x2="710" y2="333" marker-end="url(#ahm)"/>
+        <line class="edge-dash" x1="877" y1="295" x2="877" y2="333" marker-end="url(#ahm)"/>
+      </svg>
