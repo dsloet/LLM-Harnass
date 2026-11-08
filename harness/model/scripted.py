@@ -22,13 +22,29 @@ from harness.model.base import ModelReply, ToolCall
 
 
 class ScriptedModel:
+    """A model that returns the replies of a scenario file, one per call."""
+
     def __init__(self, scenario_path: Path) -> None:
+        """Load the scenario.
+
+        Args:
+            scenario_path: Location of the scenario YAML file.
+        """
         data = yaml.safe_load(Path(scenario_path).read_text(encoding="utf-8"))
         self.name = f"scripted:{Path(scenario_path).stem}"
         self._replies = list(_expand(data.get("steps") or []))
         self._position = 0
 
     def complete(self, messages: list[dict], tools: list[dict]) -> ModelReply:
+        """Return the next scripted reply.
+
+        Args:
+            messages: The conversation so far. Not used: the script does not react to it.
+            tools: The tool descriptions. Not used.
+
+        Returns:
+            The next reply, or a plain "Scenario finished." when the script is used up.
+        """
         if self._position >= len(self._replies):
             return ModelReply(text="Scenario finished.")
         reply = self._replies[self._position]
@@ -37,6 +53,14 @@ class ScriptedModel:
 
 
 def _expand(steps: list[dict]):
+    """Turn scenario steps into replies, repeating steps that ask for it.
+
+    Args:
+        steps: The ``steps`` list of the scenario.
+
+    Yields:
+        One ModelReply per proposed tool call or final answer.
+    """
     for step in steps:
         if "say" in step:
             yield ModelReply(text=str(step["say"]))

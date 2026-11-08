@@ -18,6 +18,24 @@ from harness.tools import Tool, enabled_tools
 
 @dataclass
 class Session:
+    """The parts of one running session.
+
+    Attributes:
+        settings: The validated settings.
+        model: The model client.
+        audit: The audit log of this session.
+        ledger: Record of everything the model has seen.
+        catalog: Source of context items and trust labels.
+        gate: The policy gate.
+        approver: Decides calls that need a person.
+        hooks: Runs the checks before and after tool calls.
+        tools: The enabled tools by name.
+        tracer: The OpenTelemetry tracer.
+        user: Name of the person who started the run.
+        role: Role of that person.
+        tool_calls: Number of tool calls proposed so far.
+    """
+
     settings: Settings
     model: ModelClient
     audit: AuditLog
@@ -35,7 +53,21 @@ class Session:
 
 def build_session(settings: Settings, model: ModelClient, tracer: trace.Tracer,
                   user: str, role: str) -> Session:
-    """Wire the components together. Any invalid config fails here, before any action."""
+    """Wire the components together. Any invalid config fails here, before any action.
+
+    Args:
+        settings: The validated settings.
+        model: The model client.
+        tracer: The OpenTelemetry tracer.
+        user: Name of the person who started the run.
+        role: Role of that person.
+
+    Returns:
+        A session ready to run.
+
+    Raises:
+        PolicyError: If the policy file is invalid (raised by the policy gate).
+    """
     policy = load_yaml(settings.paths.config_dir / "policy.yaml")
     return Session(
         settings=settings,

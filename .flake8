@@ -1,0 +1,10 @@
+# Lint settings. Run with: make lint
+[flake8]
+max-line-length = 110
+exclude = .git,__pycache__,var,build,dist
+# Docstrings in Google style (https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings),
+# checked by the flake8-docstrings plugin.
+docstring-convention = google
+# Tests describe themselves through their names; a module docstring is enough there.
+per-file-ignores =
+    tests/*: D100,D103

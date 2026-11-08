@@ -22,6 +22,15 @@ logger = logging.getLogger(__name__)
 
 
 def handle_tool_call(session: Session, call: ToolCall) -> str:
+    """Take one proposed tool call through every control and return the text for the model.
+
+    Args:
+        session: The running session.
+        call: The call the model proposed.
+
+    Returns:
+        The tool output, or a refusal message. The model gets either one as data.
+    """
     session.tool_calls += 1
     number = session.tool_calls
     console.proposal(number, call.name, call.arguments)
@@ -37,7 +46,18 @@ def handle_tool_call(session: Session, call: ToolCall) -> str:
 
 
 def _check(session: Session, call: ToolCall, number: int) -> str | None:
-    """Return a refusal message for the model, or None if the call may run."""
+    """Return a refusal message for the model, or None if the call may run.
+
+    Checks, in order: known tool, policy gate, approval, pre hooks.
+
+    Args:
+        session: The running session.
+        call: The call the model proposed.
+        number: Running number of the call in this session.
+
+    Returns:
+        The refusal message, or None if every check passed.
+    """
     if call.name not in session.tools:
         session.audit.append("tool_refused", {"n": number, "reason": "unknown or disabled tool"})
         console.decision("deny", "-", "Unknown or disabled tool.")
@@ -55,7 +75,9 @@ def _check(session: Session, call: ToolCall, number: int) -> str | None:
         return f"Refused by policy rule '{verdict.rule_id}': {verdict.reason}"
     if verdict.decision is Decision.ASK:
         result = session.approver.decide(call, verdict)
-        session.audit.append("approval", {"n": number, "approved": result.approved, "approver": result.approver})
+        session.audit.append("approval", {
+            "n": number, "approved": result.approved, "approver": result.approver,
+        })
         console.note(f"approval: {'granted' if result.approved else 'refused'} by {result.approver}")
         if not result.approved:
             return f"Refused: a person did not approve this action ({verdict.reason})."
@@ -70,6 +92,16 @@ def _check(session: Session, call: ToolCall, number: int) -> str | None:
 
 
 def _execute(session: Session, call: ToolCall, number: int) -> str:
+    """Run the tool and turn its result into text for the model.
+
+    Args:
+        session: The running session.
+        call: The call the model proposed.
+        number: Running number of the call in this session.
+
+    Returns:
+        The cleaned tool output, or an error message the model can read.
+    """
     ctx = ToolContext(
         settings=session.settings, catalog=session.catalog, user=session.user,
         role=session.role, session_id=session.audit.session_id, call_number=number,
@@ -90,6 +122,17 @@ def _execute(session: Session, call: ToolCall, number: int) -> str:
 
 
 def _record_output(session: Session, call: ToolCall, number: int, output: ToolOutput) -> str:
+    """Add the output to the ledger, write the audit event and render it for the model.
+
+    Args:
+        session: The running session.
+        call: The call that produced the output.
+        number: Running number of the call in this session.
+        output: What the tool returned.
+
+    Returns:
+        The rendered text, with a source label for each item.
+    """
     items = output.items or (ContextItem(
         source_id=f"tool:{call.name}:{number}",
         trust=session.catalog.tool_output_trust,
@@ -114,7 +157,17 @@ def _record_output(session: Session, call: ToolCall, number: int, output: ToolOu
 
 
 def _clean(session: Session, call: ToolCall, item: ContextItem, flags: dict) -> ContextItem:
-    """Truncate long output and run post hooks. The model sees the cleaned text."""
+    """Truncate long output and run post hooks. The model sees the cleaned text.
+
+    Args:
+        session: The running session.
+        call: The call that produced the item.
+        item: One piece of tool output.
+        flags: Dictionary that collects warnings (truncation, hook flags). It is updated in place.
+
+    Returns:
+        A new item with the cleaned text.
+    """
     limit = session.settings.limits.max_output_chars
     text = item.content
     if len(text) > limit:
@@ -127,5 +180,11 @@ def _clean(session: Session, call: ToolCall, item: ContextItem, flags: dict) -> 
 
 
 def _log_events(session: Session, events: list[tuple[str, dict]]) -> None:
+    """Write hook and tool events to the audit log.
+
+    Args:
+        session: The running session.
+        events: Pairs of event name and event data.
+    """
     for event, data in events:
         session.audit.append(event, data)

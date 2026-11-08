@@ -19,14 +19,36 @@ class ToolCall:
 
 @dataclass(frozen=True)
 class ModelReply:
+    """One reply from the model.
+
+    Attributes:
+        text: The text of the reply. For a final answer this is the answer.
+        tool_calls: The tool calls the model proposes, possibly none.
+        raw: The unprocessed response, kept for debugging.
+    """
+
     text: str
     tool_calls: tuple[ToolCall, ...] = ()
     raw: dict = field(default_factory=dict)
 
 
 class ModelClient(Protocol):
+    """What every model client must offer.
+
+    Attributes:
+        name: Name used in the audit log, for example ``ollama:qwen``.
+    """
+
     name: str
 
     def complete(self, messages: list[dict], tools: list[dict]) -> ModelReply:
-        """Send the conversation and the available tools; get the next reply."""
+        """Send the conversation and the available tools; get the next reply.
+
+        Args:
+            messages: The conversation so far.
+            tools: The tool descriptions the model may use.
+
+        Returns:
+            The model's reply.
+        """
         ...

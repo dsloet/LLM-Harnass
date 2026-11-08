@@ -1,4 +1,6 @@
-"""Command line: python -m harness <command>
+"""Command line: python -m harness <command>.
+
+Commands:
 
     run "task"                 run an agent session
     policy-check TOOL ARGS     dry-run the policy gate for one tool call
@@ -26,6 +28,15 @@ DEFAULT_CONFIG = os.environ.get("HARNESS_CONFIG", "/app/config/harness.yaml")
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run the command line and return the process exit code.
+
+    Args:
+        argv: Command line arguments without the program name. None means
+            use ``sys.argv``. Tests pass a list here.
+
+    Returns:
+        0 on success, 1 when a check fails, 2 on a configuration error.
+    """
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
     args = _parser().parse_args(argv)
     try:
@@ -37,6 +48,11 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _parser() -> argparse.ArgumentParser:
+    """Build the argument parser with one sub-command per action.
+
+    Returns:
+        The parser. Each sub-command stores its handler function in ``args.handler``.
+    """
     parser = argparse.ArgumentParser(prog="harness", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--config", default=DEFAULT_CONFIG, help="path to harness.yaml")
@@ -69,6 +85,15 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def _cmd_run(args: argparse.Namespace, settings: Settings) -> int:
+    """Run one agent session.
+
+    Args:
+        args: Parsed command line arguments.
+        settings: The validated settings.
+
+    Returns:
+        The exit code, always 0.
+    """
     from harness.loop import run_session  # imported here: tracing setup is only needed for runs
 
     model_update = {"provider": "scripted", "scenario": args.scenario} if args.scenario else {}
@@ -81,6 +106,15 @@ def _cmd_run(args: argparse.Namespace, settings: Settings) -> int:
 
 
 def _cmd_policy_check(args: argparse.Namespace, settings: Settings) -> int:
+    """Show the policy verdict for one tool call without running it.
+
+    Args:
+        args: Parsed command line arguments with the tool name and JSON arguments.
+        settings: The validated settings.
+
+    Returns:
+        The exit code, always 0.
+    """
     gate = PolicyGate(load_yaml(settings.paths.config_dir / "policy.yaml"))
     verdict = gate.evaluate(ToolCall(args.tool, json.loads(args.arguments)))
     print(f"{verdict.decision.value.upper()}  rule={verdict.rule_id}  {verdict.reason}")
@@ -88,6 +122,15 @@ def _cmd_policy_check(args: argparse.Namespace, settings: Settings) -> int:
 
 
 def _cmd_verify(args: argparse.Namespace, settings: Settings) -> int:
+    """Check the hash chain of the audit log.
+
+    Args:
+        args: Parsed command line arguments (not used).
+        settings: The validated settings.
+
+    Returns:
+        0 if the chain is intact, 1 if it is broken.
+    """
     result = verify_chain(settings.paths.audit_dir / LOG_NAME)
     if result.ok:
         print(f"OK: {result.events} events, hash chain intact. {result.problem}".strip())
@@ -98,6 +141,15 @@ def _cmd_verify(args: argparse.Namespace, settings: Settings) -> int:
 
 
 def _cmd_show_call(args: argparse.Namespace, settings: Settings) -> int:
+    """Print the context manifest that was stored for one model call.
+
+    Args:
+        args: Parsed command line arguments with the call ID.
+        settings: The validated settings.
+
+    Returns:
+        0 if the call was found, 1 if it was not.
+    """
     path = settings.paths.audit_dir / "calls" / f"{args.call_id}.json"
     if not path.exists():
         print(f"No stored call {args.call_id}. Call IDs are in the model_call events of the audit log.")
@@ -106,12 +158,22 @@ def _cmd_show_call(args: argparse.Namespace, settings: Settings) -> int:
     print(f"Model call {args.call_id} ({payload['model']})\n")
     print(f"{'source':32} {'trust':10} {'version':26} sha256")
     for entry in payload["manifest"]:
-        print(f"{entry['source_id']:32} {entry['trust']:10} {entry['version'][:26]:26} {entry['sha256'][:12]}")
+        print(f"{entry['source_id']:32} {entry['trust']:10} {entry['version'][:26]:26} "
+              f"{entry['sha256'][:12]}")
     print(f"\n{len(payload['messages'])} messages; full prompt in {path}")
     return 0
 
 
 def _cmd_revert(args: argparse.Namespace, settings: Settings) -> int:
+    """Undo the file writes of one session.
+
+    Args:
+        args: Parsed command line arguments with the session ID.
+        settings: The validated settings.
+
+    Returns:
+        The exit code, always 0.
+    """
     done = revert_session(settings.paths.audit_dir, settings.paths.workspace, args.session_id)
     print("\n".join(done) if done else "No writes recorded for that session.")
     return 0

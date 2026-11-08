@@ -22,6 +22,14 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class PreOutcome:
+    """The result of all pre hooks.
+
+    Attributes:
+        blocked: True if the call must not run.
+        reason: Why it was blocked.
+        events: Audit events written by the hooks, as pairs of name and data.
+    """
+
     blocked: bool = False
     reason: str = ""
     events: list[tuple[str, dict]] = field(default_factory=list)
@@ -29,13 +37,31 @@ class PreOutcome:
 
 @dataclass
 class PostOutcome:
+    """The result of all post hooks.
+
+    Attributes:
+        text: The output after all hooks ran.
+        flags: Warnings collected from the hooks.
+        events: Audit events written by the hooks, as pairs of name and data.
+    """
+
     text: str
     flags: dict = field(default_factory=dict)
     events: list[tuple[str, dict]] = field(default_factory=list)
 
 
 class HookRunner:
+    """Runs the enabled hooks around a tool call."""
+
     def __init__(self, settings: HookSettings) -> None:
+        """Select the enabled hooks.
+
+        Args:
+            settings: The hook settings.
+
+        Raises:
+            ValueError: If an enabled hook does not exist.
+        """
         unknown = set(settings.enabled) - set(BUILTIN_HOOKS)
         if unknown:
             raise ValueError(f"hooks.enabled lists unknown hooks: {sorted(unknown)}")
@@ -45,6 +71,14 @@ class HookRunner:
         self._post = [h for h in hooks if h.stage == "post"]
 
     def before(self, call: ToolCall) -> PreOutcome:
+        """Run the pre hooks. The first one that blocks stops the others.
+
+        Args:
+            call: The proposed tool call.
+
+        Returns:
+            The outcome. A crashing hook blocks the call when ``fail_closed`` is set.
+        """
         outcome = PreOutcome()
         for hook in self._pre:
             try:
@@ -59,6 +93,16 @@ class HookRunner:
         return outcome
 
     def after(self, call: ToolCall, text: str, trust: str) -> PostOutcome:
+        """Run the post hooks, each on the output of the one before.
+
+        Args:
+            call: The tool call that produced the text.
+            text: The tool output.
+            trust: Trust level of the output.
+
+        Returns:
+            The outcome. A crashing hook withholds the output when ``fail_closed`` is set.
+        """
         outcome = PostOutcome(text)
         for hook in self._post:
             try:
@@ -66,12 +110,20 @@ class HookRunner:
             except Exception as exc:  # noqa: BLE001
                 self._record_crash(outcome.events, hook, exc)
                 if self.fail_closed:
-                    return PostOutcome("[output withheld: a safety hook failed]", outcome.flags, outcome.events)
+                    return PostOutcome("[output withheld: a safety hook failed]",
+                                       outcome.flags, outcome.events)
                 continue
             outcome.text = result.text
             outcome.flags.update(result.flags)
         return outcome
 
     def _record_crash(self, events: list, hook: Hook, exc: Exception) -> None:
+        """Log a crashing hook and add an audit event.
+
+        Args:
+            events: The event list of the current outcome. It is extended in place.
+            hook: The hook that crashed.
+            exc: The exception it raised.
+        """
         logger.error("Hook %s crashed: %s", hook.name, exc)
         events.append(("hook_error", {"hook": hook.name, "error": str(exc), "fail_closed": self.fail_closed}))

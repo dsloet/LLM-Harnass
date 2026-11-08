@@ -15,6 +15,18 @@ MAX_LIST = 200
 
 
 def _list_files(arguments: dict, ctx: ToolContext) -> ToolOutput:
+    """List the files below a workspace folder, at most MAX_LIST of them.
+
+    Args:
+        arguments: Optional ``path`` of the folder. The default is the workspace root.
+        ctx: The tool context.
+
+    Returns:
+        One relative path per line.
+
+    Raises:
+        ToolError: If the path is not a folder in the workspace.
+    """
     root = ctx.settings.paths.workspace
     folder = confine(root, str(arguments.get("path") or "."))
     if not folder.is_dir():
@@ -26,6 +38,18 @@ def _list_files(arguments: dict, ctx: ToolContext) -> ToolOutput:
 
 
 def _read_file(arguments: dict, ctx: ToolContext) -> ToolOutput:
+    """Read a text file from the workspace.
+
+    Args:
+        arguments: The ``path`` of the file.
+        ctx: The tool context.
+
+    Returns:
+        The file content.
+
+    Raises:
+        ToolError: If the file does not exist.
+    """
     path = confine(ctx.settings.paths.workspace, require_str(arguments, "path"))
     if not path.is_file():
         raise ToolError(f"No file '{arguments['path']}' in the workspace.")
@@ -33,6 +57,18 @@ def _read_file(arguments: dict, ctx: ToolContext) -> ToolOutput:
 
 
 def _write_file(arguments: dict, ctx: ToolContext) -> ToolOutput:
+    """Write a file in the workspace, after saving a snapshot of the old content.
+
+    Args:
+        arguments: The ``path`` and the new ``content``.
+        ctx: The tool context.
+
+    Returns:
+        A confirmation message.
+
+    Raises:
+        ToolError: If the content is not a string.
+    """
     relative = require_str(arguments, "path")
     content = arguments.get("content")
     if not isinstance(content, str):
@@ -46,6 +82,16 @@ def _write_file(arguments: dict, ctx: ToolContext) -> ToolOutput:
 
 
 def _snapshot(path: Path, relative: str, ctx: ToolContext) -> str:
+    """Save the current content of a file, so the write can be undone.
+
+    Args:
+        path: The absolute path of the file.
+        relative: The path as the model gave it, written to the index.
+        ctx: The tool context.
+
+    Returns:
+        The snapshot file name, or ``(new file)`` if the file did not exist.
+    """
     folder = ctx.settings.paths.audit_dir / "snapshots" / ctx.session_id
     folder.mkdir(parents=True, exist_ok=True)
     index_path = folder / "index.json"
@@ -60,7 +106,16 @@ def _snapshot(path: Path, relative: str, ctx: ToolContext) -> str:
 
 
 def revert_session(audit_dir: Path, workspace: Path, session_id: str) -> list[str]:
-    """Undo every write of one session, newest first. Returns what was done."""
+    """Undo every write of one session, newest first.
+
+    Args:
+        audit_dir: The audit folder that holds the snapshots.
+        workspace: The workspace folder.
+        session_id: ID of the session to undo.
+
+    Returns:
+        One line per undone write. Empty if the session has no snapshots.
+    """
     folder = audit_dir / "snapshots" / session_id
     index_path = folder / "index.json"
     if not index_path.exists():

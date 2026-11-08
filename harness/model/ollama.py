@@ -20,11 +20,30 @@ class ModelError(RuntimeError):
 
 
 class OllamaClient:
+    """Model client for an Ollama server."""
+
     def __init__(self, settings: ModelSettings) -> None:
+        """Create the client.
+
+        Args:
+            settings: The model settings with name, URL, temperature and timeout.
+        """
         self.name = f"ollama:{settings.name}"
         self._settings = settings
 
     def complete(self, messages: list[dict], tools: list[dict]) -> ModelReply:
+        """Send the conversation to Ollama and return its reply.
+
+        Args:
+            messages: The conversation so far.
+            tools: The tool descriptions the model may use.
+
+        Returns:
+            The model's reply.
+
+        Raises:
+            ModelError: If the server cannot be reached or returns an HTTP error.
+        """
         payload = {
             "model": self._settings.name,
             "messages": messages,
@@ -46,6 +65,14 @@ class OllamaClient:
 
 
 def _parse(body: dict) -> ModelReply:
+    """Turn an Ollama response body into a ModelReply.
+
+    Args:
+        body: The decoded JSON of the response.
+
+    Returns:
+        The reply with its tool calls. Malformed arguments become an empty dictionary.
+    """
     message = body.get("message") or {}
     calls = []
     for raw_call in message.get("tool_calls") or []:

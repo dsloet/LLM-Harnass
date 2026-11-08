@@ -24,7 +24,14 @@ _provider: TracerProvider | None = None
 
 
 def init_tracing(settings: TelemetrySettings) -> trace.Tracer:
-    """Set up export to the OTLP endpoint, or return a tracer that does nothing."""
+    """Set up export to the OTLP endpoint, or return a tracer that does nothing.
+
+    Args:
+        settings: The tracing settings.
+
+    Returns:
+        A real tracer if tracing is enabled, otherwise a no-op tracer.
+    """
     global _provider
     if not settings.enabled:
         return trace.NoOpTracer()
@@ -48,8 +55,20 @@ def shutdown_tracing() -> None:
 
 @contextmanager
 def span(tracer: trace.Tracer, name: str, **attributes):
+    """Open a span and set the given attributes on it.
+
+    Args:
+        tracer: The tracer to use.
+        name: Name of the span.
+        **attributes: Span attributes. None values are skipped. Values that are not
+            strings, numbers or booleans are converted to strings.
+
+    Yields:
+        The current span, so the caller can add more attributes.
+    """
     with tracer.start_as_current_span(name) as current:
         for key, value in attributes.items():
             if value is not None:
-                current.set_attribute(key, value if isinstance(value, (str, int, float, bool)) else str(value))
+                is_simple = isinstance(value, (str, int, float, bool))
+                current.set_attribute(key, value if is_simple else str(value))
         yield current

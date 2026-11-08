@@ -1,8 +1,10 @@
 # Short commands for the lessons. Everything runs in Docker.
 DC := docker compose
 RUN := $(DC) run --rm harness
+# Lint and tests use the source on your disk, mounted read-only: no rebuild needed after edits.
+DEV := $(DC) run --rm --no-deps -v "$(CURDIR):/src:ro" -w /src -e PYTHONPATH=/src
 
-.PHONY: help up down build test run demo-hello demo-policy demo-destructive demo-injection demo-provenance demo-runaway verify policy-check traces clean
+.PHONY: help up down build test lint check run demo-hello demo-policy demo-destructive demo-injection demo-provenance demo-runaway verify policy-check traces clean
 
 help:            ## Show this list
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-18s %s\n", $$1, $$2}'
@@ -19,7 +21,12 @@ down:            ## Stop all containers
 	$(DC) down
 
 test:            ## Run the unit and scenario tests (no model needed)
-	$(DC) run --rm --no-deps --entrypoint python harness -m pytest
+	$(DEV) --entrypoint python harness -m pytest
+
+lint:            ## Check style and Google-style docstrings with flake8
+	$(DEV) --entrypoint flake8 harness harness tests
+
+check: lint test ## Lint, then test
 
 run:             ## Run a task against the real model: make run TASK="..." ROLE=analyst
 	$(RUN) run --role $(or $(ROLE),analyst) "$(TASK)"

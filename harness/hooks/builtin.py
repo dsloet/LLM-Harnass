@@ -14,12 +14,27 @@ from harness.model.base import ToolCall
 
 @dataclass(frozen=True)
 class PostResult:
+    """The result of a post hook.
+
+    Attributes:
+        text: The text after the hook ran.
+        flags: Warnings for the audit log. Empty if there is nothing to report.
+    """
+
     text: str
     flags: dict = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
 class Hook:
+    """A named hook.
+
+    Attributes:
+        name: Name used in ``hooks.enabled``.
+        stage: ``pre`` runs before the tool, ``post`` runs on its output.
+        fn: The function to call.
+    """
+
     name: str
     stage: str                    # "pre" or "post"
     fn: Callable
@@ -37,6 +52,16 @@ _SECRET_PATTERNS = {
 
 
 def secret_redactor(call: ToolCall, text: str, trust: str) -> PostResult:
+    """Replace secrets in the output with a marker.
+
+    Args:
+        call: The tool call that produced the text. Not used.
+        text: The tool output.
+        trust: Trust level of the output. Not used.
+
+    Returns:
+        The cleaned text and a flag that counts the redactions per kind.
+    """
     found = {}
     for label, pattern in _SECRET_PATTERNS.items():
         text, count = pattern.subn(f"[REDACTED:{label}]", text)
@@ -56,6 +81,16 @@ _INJECTION_HINTS = re.compile(
 
 
 def injection_flagger(call: ToolCall, text: str, trust: str) -> PostResult:
+    """Flag phrases that look like a prompt injection in untrusted output.
+
+    Args:
+        call: The tool call that produced the text. Not used.
+        text: The tool output. It is not changed.
+        trust: Trust level of the output. Only ``untrusted`` output is checked.
+
+    Returns:
+        The unchanged text and a flag that lists the phrases found.
+    """
     if trust != "untrusted":
         return PostResult(text)
     hits = sorted({m.group(0)[:60] for m in _INJECTION_HINTS.finditer(text)})
@@ -65,6 +100,14 @@ def injection_flagger(call: ToolCall, text: str, trust: str) -> PostResult:
 # ---------- always_crashes (pre) ----------
 # Lesson 2: enable this hook and compare hooks.fail_closed true vs false.
 def always_crashes(call: ToolCall) -> str | None:
+    """Fail on purpose, to show what a crashing hook does.
+
+    Args:
+        call: The tool call. Not used.
+
+    Raises:
+        RuntimeError: Always.
+    """
     raise RuntimeError("this hook is broken on purpose")
 
 

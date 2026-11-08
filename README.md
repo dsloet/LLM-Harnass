@@ -15,6 +15,7 @@ You need Docker with Compose. Nothing else runs on your machine.
 ```bash
 make build        # build the harness image
 make test         # 34 tests, no model needed
+make lint         # flake8, including Google-style docstrings
 make up           # start Ollama + Jaeger, download qwen2.5:3b (about 2 GB)
 make demo-hello   # lesson 1 with a scripted model
 ```
@@ -76,6 +77,7 @@ More detail: [`docs/architecture.md`](docs/architecture.md).
 | `workspace/` | The only folder the agent's tools can touch. |
 | `var/` | Created at runtime: `audit/` (log, prompts, snapshots) and `outbox/`. Not in git. |
 | `tests/` | Unit tests and scenario tests. |
+| `.flake8` | Lint rules: flake8 with Google-style docstrings (`make lint`). |
 | `docs/` | Architecture, lessons and the report. |
 
 ## Lessons
@@ -100,6 +102,10 @@ make policy-check TOOL=run_command ARGS='{"argv":["rm","-rf","x"]}'
 docker compose run --rm harness show-call <call_id>    # what the model saw in one call
 docker compose run --rm harness revert <session_id>    # undo a session's file writes
 ```
+
+## Code style
+
+Every module, class and function has a docstring in [Google style](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings) (`Args:`, `Returns:`, `Raises:`). `make lint` runs flake8 with the flake8-docstrings plugin and fails on missing or malformed docstrings in public code. `make check` runs lint and then the tests.
 
 ## What this harness does not do
 

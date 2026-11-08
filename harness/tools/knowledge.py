@@ -9,6 +9,15 @@ from harness.tools.base import Tool, ToolContext, ToolOutput, require_str
 
 
 def _search_records(arguments: dict, ctx: ToolContext) -> ToolOutput:
+    """Search the internal records the current role may see.
+
+    Args:
+        arguments: The ``query`` words.
+        ctx: The tool context.
+
+    Returns:
+        A summary for the model, plus the visible records as context items.
+    """
     query = require_str(arguments, "query")
     result = ctx.catalog.search_records(query, ctx.role)
     if result.withheld:
@@ -20,6 +29,15 @@ def _search_records(arguments: dict, ctx: ToolContext) -> ToolOutput:
 
 
 def _read_inbox(arguments: dict, ctx: ToolContext) -> ToolOutput:
+    """Read all messages in the shared inbox.
+
+    Args:
+        arguments: Not used. The tool takes no arguments.
+        ctx: The tool context.
+
+    Returns:
+        A summary for the model, plus one context item per message.
+    """
     items = ctx.catalog.inbox()
     return ToolOutput(f"{len(items)} message(s) in the inbox.", items)
 

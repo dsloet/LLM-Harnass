@@ -25,6 +25,19 @@ _SAFE_ENV = {"PATH": "/usr/local/bin:/usr/bin:/bin", "HOME": "/tmp", "LANG": "C.
 
 
 def _run_command(arguments: dict, ctx: ToolContext) -> ToolOutput:
+    """Run an allowed program with an argument list, without a shell.
+
+    Args:
+        arguments: The ``argv`` list. The first item is the program.
+        ctx: The tool context.
+
+    Returns:
+        The exit code and the output of the program.
+
+    Raises:
+        ToolError: If ``argv`` is invalid, the program is not allowed, a path argument
+            leaves the workspace, the command times out or the program is missing.
+    """
     argv = arguments.get("argv")
     if not isinstance(argv, list) or not argv or not all(isinstance(a, str) for a in argv):
         raise ToolError("Argument 'argv' must be a non-empty list of strings.")

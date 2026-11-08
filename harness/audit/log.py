@@ -28,15 +28,39 @@ LOG_NAME = "audit.jsonl"
 
 
 def _canonical(record: dict) -> bytes:
+    """Serialise a record the same way every time, so its hash is stable.
+
+    Args:
+        record: The record to serialise.
+
+    Returns:
+        Compact JSON bytes with sorted keys.
+    """
     return json.dumps(record, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()
 
 
 def _hash(record_without_hash: dict) -> str:
+    """Hash a record that does not yet contain its own hash.
+
+    Args:
+        record_without_hash: The record without the ``hash`` field.
+
+    Returns:
+        The SHA-256 hash as hex text.
+    """
     return hashlib.sha256(_canonical(record_without_hash)).hexdigest()
 
 
 class AuditLog:
+    """Append-only log file whose events are linked by hashes."""
+
     def __init__(self, audit_dir: Path, session_id: str | None = None) -> None:
+        """Open the log, creating the folders if needed, and find the end of the chain.
+
+        Args:
+            audit_dir: Folder for the log file and the stored model calls.
+            session_id: ID for this session. A random one is made if it is None.
+        """
         self.dir = Path(audit_dir)
         self.dir.mkdir(parents=True, exist_ok=True)
         (self.dir / "calls").mkdir(exist_ok=True)
@@ -45,6 +69,15 @@ class AuditLog:
         self._prev_hash, self._seq = self._tail()
 
     def append(self, event: str, data: dict) -> dict:
+        """Add one event to the end of the chain.
+
+        Args:
+            event: Name of the event, for example ``tool_result``.
+            data: The details of the event.
+
+        Returns:
+            The full record as written, including its hash.
+        """
         record = {
             "seq": self._seq + 1,
             "ts": now_iso(),
@@ -60,12 +93,25 @@ class AuditLog:
         return record
 
     def store_call(self, call_id: str, payload: dict) -> str:
-        """Store the full prompt of one model call; return its hash for the log."""
+        """Store the full prompt of one model call; return its hash for the log.
+
+        Args:
+            call_id: ID of the model call. It becomes the file name.
+            payload: The model name, manifest, messages and tool descriptions.
+
+        Returns:
+            The SHA-256 hash of the stored file content.
+        """
         body = json.dumps(payload, ensure_ascii=False, indent=2)
         (self.dir / "calls" / f"{call_id}.json").write_text(body, encoding="utf-8")
         return hashlib.sha256(body.encode("utf-8")).hexdigest()
 
     def _tail(self) -> tuple[str, int]:
+        """Read the hash and sequence number of the last event in the log.
+
+        Returns:
+            The last hash and sequence number, or the genesis hash and 0 for an empty log.
+        """
         if not self.path.exists():
             return GENESIS, 0
         last = None
@@ -81,6 +127,15 @@ class AuditLog:
 
 @dataclass(frozen=True)
 class VerifyResult:
+    """The outcome of checking the chain.
+
+    Attributes:
+        ok: True if the whole chain is intact.
+        events: Number of intact events before the first problem.
+        first_bad_line: Line number of the first broken event, or None.
+        problem: Description of what is wrong, or a note when nothing is.
+    """
+
     ok: bool
     events: int
     first_bad_line: int | None = None
@@ -88,6 +143,14 @@ class VerifyResult:
 
 
 def verify_chain(path: Path) -> VerifyResult:
+    """Check every event of the log against its hash and its link to the previous event.
+
+    Args:
+        path: Location of the log file.
+
+    Returns:
+        The result, with the first broken line if there is one.
+    """
     prev = GENESIS
     count = 0
     if not Path(path).exists():

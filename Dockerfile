@@ -9,6 +9,7 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY harness ./harness
 COPY tests ./tests
+COPY .flake8 ./.flake8
 RUN pip install ".[dev]"
 
 # Run as an unprivileged user. Combined with a read-only root filesystem

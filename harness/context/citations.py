@@ -17,16 +17,35 @@ _CITATION = re.compile(r"\[source:([A-Za-z0-9_.:\-]+)\]")
 
 @dataclass(frozen=True)
 class CitationReport:
+    """The result of the citation check.
+
+    Attributes:
+        cited: Source IDs cited in the answer, each once, in order.
+        unknown: Cited IDs the model never saw. These are invented.
+        missing: True if citations were required but the answer has none.
+    """
+
     cited: tuple[str, ...]
     unknown: tuple[str, ...]        # cited, but never in the context: invented
     missing: bool                   # citations required but none given
 
     @property
     def ok(self) -> bool:
+        """Return True if no citation is invented and none is missing."""
         return not self.unknown and not self.missing
 
 
 def check_citations(answer: str, ledger: ContextLedger, required: bool) -> CitationReport:
+    """Check the citations of an answer against the ledger.
+
+    Args:
+        answer: The final answer text. Citations look like ``[source:ID]``.
+        ledger: The ledger of items the model saw in this session.
+        required: True if the answer must cite at least one source.
+
+    Returns:
+        The report.
+    """
     cited = tuple(dict.fromkeys(_CITATION.findall(answer)))
     unknown = tuple(source_id for source_id in cited if not ledger.has(source_id))
     return CitationReport(cited=cited, unknown=unknown, missing=required and not cited)

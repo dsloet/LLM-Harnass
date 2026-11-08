@@ -29,6 +29,15 @@ from harness.telemetry import init_tracing, shutdown_tracing, span
 
 @dataclass(frozen=True)
 class SessionResult:
+    """The outcome of one session.
+
+    Attributes:
+        session_id: ID of the session in the audit log.
+        stop_reason: ``final_answer``, ``step_limit``, ``time_limit`` or ``model_error``.
+        answer: The final answer text, empty if the session did not reach one.
+        citations: The citation check of the answer, or None if there was no answer.
+    """
+
     session_id: str
     stop_reason: str                      # final_answer | step_limit | time_limit | model_error
     answer: str = ""
@@ -36,6 +45,18 @@ class SessionResult:
 
 
 def run_session(settings: Settings, model: ModelClient, task: str, user: str, role: str) -> SessionResult:
+    """Run one agent session from start to end.
+
+    Args:
+        settings: The validated settings.
+        model: The model client to ask for each step.
+        task: The request from the user.
+        user: Name of the person who started the run.
+        role: Role of that person, used by the access filter on records.
+
+    Returns:
+        The result of the session.
+    """
     tracer = init_tracing(settings.telemetry)
     session = build_session(settings, model, tracer, user, role)
     _start(session, task)
@@ -52,6 +73,12 @@ def run_session(settings: Settings, model: ModelClient, task: str, user: str, ro
 
 
 def _start(session: Session, task: str) -> None:
+    """Write the session_start audit event and print the header.
+
+    Args:
+        session: The running session.
+        task: The request from the user.
+    """
     paths = session.settings.paths
     session.audit.append("session_start", {
         "user": session.user,
@@ -68,6 +95,17 @@ def _start(session: Session, task: str) -> None:
 
 
 def _opening_messages(session: Session, task: str) -> list[dict]:
+    """Build the first two messages: the system rules and the user's request.
+
+    Both go through the ledger so they appear in the context manifest.
+
+    Args:
+        session: The running session.
+        task: The request from the user.
+
+    Returns:
+        The message list to start the conversation.
+    """
     rules = session.ledger.add(session.catalog.system_rules())
     request = session.ledger.add(ContextItem("request", "user", "request", task))
     return [
@@ -77,6 +115,15 @@ def _opening_messages(session: Session, task: str) -> list[dict]:
 
 
 def _run(session: Session, messages: list[dict]) -> SessionResult:
+    """Ask the model step by step until it answers or a limit is reached.
+
+    Args:
+        session: The running session.
+        messages: The conversation so far. Tool results are appended in place.
+
+    Returns:
+        The result of the session.
+    """
     limits = session.settings.limits
     started = time.monotonic()
     session_id = session.audit.session_id
@@ -99,6 +146,16 @@ def _run(session: Session, messages: list[dict]) -> SessionResult:
 
 
 def _call_model(session: Session, messages: list[dict], step: int) -> ModelReply:
+    """Record what the model will see, call it, and record the reply.
+
+    Args:
+        session: The running session.
+        messages: The conversation so far.
+        step: Number of this model call, starting at 1.
+
+    Returns:
+        The model's reply.
+    """
     call_id = f"{session.audit.session_id}-{step:02d}"
     schemas = [tool.schema() for tool in session.tools.values()]
     manifest = session.ledger.manifest()
@@ -120,6 +177,14 @@ def _call_model(session: Session, messages: list[dict], step: int) -> ModelReply
 
 
 def _assistant_message(reply: ModelReply) -> dict:
+    """Turn a model reply into a message for the conversation history.
+
+    Args:
+        reply: The reply from the model.
+
+    Returns:
+        A message dictionary with role ``assistant``.
+    """
     return {
         "role": "assistant",
         "content": reply.text,
@@ -128,6 +193,15 @@ def _assistant_message(reply: ModelReply) -> dict:
 
 
 def _finish(session: Session, answer: str) -> SessionResult:
+    """End the session with the model's final answer and check its citations.
+
+    Args:
+        session: The running session.
+        answer: The final answer text.
+
+    Returns:
+        The result with the citation report.
+    """
     report = check_citations(answer, session.ledger, session.settings.context.require_citations)
     session.audit.append("final_answer", {
         "text": answer, "cited": list(report.cited), "unknown_citations": list(report.unknown),
@@ -144,6 +218,16 @@ def _finish(session: Session, answer: str) -> SessionResult:
 
 
 def _stopped(session: Session, reason: str, detail: str) -> SessionResult:
+    """End the session because a limit was reached.
+
+    Args:
+        session: The running session.
+        reason: ``step_limit`` or ``time_limit``.
+        detail: Human readable description of the limit.
+
+    Returns:
+        The result with no answer.
+    """
     session.audit.append("limit_reached", {"reason": reason, "detail": detail})
     console.say(f"\nStopped: {reason} ({detail}).", "deny")
     return SessionResult(session.audit.session_id, reason)

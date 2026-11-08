@@ -13,6 +13,17 @@ ALL_TOOLS: dict[str, Tool] = {
 
 
 def enabled_tools(settings: Settings) -> dict[str, Tool]:
+    """Select the tools that the settings switch on.
+
+    Args:
+        settings: The validated settings.
+
+    Returns:
+        The enabled tools by name.
+
+    Raises:
+        ValueError: If ``tools.enabled`` lists a tool that does not exist.
+    """
     unknown = set(settings.tools.enabled) - set(ALL_TOOLS)
     if unknown:
         raise ValueError(f"tools.enabled lists unknown tools: {sorted(unknown)}")
