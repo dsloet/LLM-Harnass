@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Open-Weight LLM Risk Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap">
+<style>
+/* Layout: a single reading column for prose, a wider measure for figures and the risk register. */
+:root {
+  --bg: #f6f7f9;
+  --bg-sunk: #eceff3;
+  --surface: #ffffff;
+  --ink: #17212c;
+  --muted: #586473;
+  --line: #d6dce4;
+  --line-strong: #9aa6b4;
+  --accent: #1f4e8c;
+  --accent-soft: #e5ecf6;
+  --risk-high: #b42318;
+  --high-soft: #fbe9e7;
+  --risk-med: #a15207;
+  --med-soft: #fcf0e0;
+  --risk-low: #2f6b3a;
+  --low-soft: #e6f2e8;
+  --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --measure: 46rem;
+  --wide: 66rem;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151c; --bg-sunk: #151d26; --surface: #18222d; --ink: #e5eaf0; --muted: #9ba7b5;
+    --line: #2a3643; --line-strong: #4f5e6e; --accent: #86ade3; --accent-soft: #1c2a3c;
+    --risk-high: #f08a7f; --high-soft: #3a1f1d; --risk-med: #f0b264; --med-soft: #382a16;
+    --risk-low: #82c891; --low-soft: #1b3022; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151c; --bg-sunk: #151d26; --surface: #18222d; --ink: #e5eaf0; --muted: #9ba7b5;
+  --line: #2a3643; --line-strong: #4f5e6e; --accent: #86ade3; --accent-soft: #1c2a3c;
+  --risk-high: #f08a7f; --high-soft: #3a1f1d; --risk-med: #f0b264; --med-soft: #382a16;
+  --risk-low: #82c891; --low-soft: #1b3022; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 4rem;
+}
+.wrap { max-width: var(--wide); margin: 0 auto; }
+.prose { max-width: var(--measure); }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.2; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2rem, 1.4rem + 2.6vw, 3.1rem); font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: clamp(1.45rem, 1.2rem + 1vw, 1.9rem); font-weight: 700; }
+h3 { font-size: 1.15rem; font-weight: 600; }
+p { margin: 0; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+code { font-family: var(--font-mono); font-size: 0.88em; background: var(--bg-sunk); padding: 0.1em 0.35em; border-radius: 3px; overflow-wrap: anywhere; }
+.eyebrow { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+/* Masthead */
+.masthead { padding-block: 3.5rem 2.5rem; border-bottom: 1px solid var(--line); display: grid; gap: 1.1rem; }
+.masthead .lede { font-size: 1.15rem; color: var(--muted); max-width: 40rem; }
+.meta { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); }
+
+/* Contents */
+nav.toc { padding-block: 1.75rem; border-bottom: 1px solid var(--line); }
+nav.toc ol { margin: 0.75rem 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.35rem 2rem; counter-reset: toc; }
+nav.toc li { counter-increment: toc; display: flex; gap: 0.6rem; }
+nav.toc li::before { content: counter(toc); font-family: var(--font-mono); color: var(--muted); font-size: 0.85rem; min-width: 1.2rem; padding-top: 0.1rem; }
+nav.toc a { color: var(--ink); text-decoration: none; }
+nav.toc a:hover { color: var(--accent); text-decoration: underline; }
+
+/* Sections */
+section { padding-block: 3rem 0.5rem; display: grid; gap: 1.25rem; }
+section > .head { display: grid; gap: 0.4rem; }
+section > *, figure > *, .stack > *, .masthead > * { min-width: 0; }
+.stack { display: grid; gap: 1rem; }
+ul.points, ol.points { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.55rem; }
+ul.points li::marker { color: var(--muted); }
+
+/* Key messages */
+.keys { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 0.75rem; }
+.key { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 1.1rem 1.2rem; display: grid; gap: 0.35rem; align-content: start; min-width: 0; }
+.key strong { font-weight: 600; }
+.key p { color: var(--muted); font-size: 0.95rem; }
+
+/* Callouts */
+.note { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 0.9rem 1.1rem; border-radius: 0 4px 4px 0; max-width: var(--measure); }
+.note.warn { border-left-color: var(--risk-high); background: var(--high-soft); }
+.note p + p { margin-top: 0.5rem; }
+
+/* Figures */
+figure { margin: 0.5rem 0 0; display: grid; gap: 0.6rem; }
+.fig-scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 1rem; }
+.fig-scroll svg { display: block; width: 100%; min-width: 640px; height: auto; color: var(--ink); }
+figcaption { font-size: 0.9rem; color: var(--muted); max-width: var(--measure); }
+figcaption b { color: var(--ink); font-weight: 600; }
+
+/* SVG diagram classes */
+.dg text { fill: var(--ink); font-family: var(--font-body); font-size: 13px; }
+.dg .t-lbl { fill: var(--muted); font-size: 11px; }
+.dg .t-ttl { font-weight: 600; font-size: 14px; }
+.dg .t-risk { fill: var(--risk-high); }
+.dg .panel { fill: var(--bg-sunk); stroke: none; }
+.dg .box { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1.2; }
+.dg .box-accent { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.2; }
+.dg .box-risk { fill: var(--high-soft); stroke: var(--risk-high); stroke-width: 1.2; }
+.dg .box-ok { fill: var(--low-soft); stroke: var(--risk-low); stroke-width: 1.2; }
+.dg .boundary { fill: none; stroke: var(--line-strong); stroke-width: 1.2; stroke-dasharray: 6 4; }
+.dg .edge { stroke: var(--ink); stroke-width: 1.4; fill: none; }
+.dg .edge-risk { stroke: var(--risk-high); stroke-width: 1.4; fill: none; }
+.dg .edge-dash { stroke: var(--line-strong); stroke-width: 1.2; stroke-dasharray: 4 4; fill: none; }
+.ah { fill: var(--ink); }
+.ah-risk { fill: var(--risk-high); }
+.ah-muted { fill: var(--line-strong); }
+
+/* Tables */
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { text-align: left; vertical-align: top; padding: 0.7rem 0.85rem; border-bottom: 1px solid var(--line); }
+thead th { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 500; background: var(--bg-sunk); }
+tbody tr:last-child td { border-bottom: 0; }
+td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+td.name { font-weight: 600; min-width: 10rem; }
+table.register { min-width: 860px; }
+table.layers { min-width: 640px; }
+table.evidence { min-width: 720px; }
+tr.group th { background: var(--surface); font-family: var(--font-display); font-size: 1rem; text-transform: none; letter-spacing: 0; color: var(--ink); padding-top: 1.1rem; font-weight: 600; }
+.pill { display: inline-block; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.04em; padding: 0.15rem 0.5rem; border-radius: 999px; white-space: nowrap; border: 1px solid; }
+.pill.high { color: var(--risk-high); background: var(--high-soft); border-color: var(--risk-high); }
+.pill.med { color: var(--risk-med); background: var(--med-soft); border-color: var(--risk-med); }
+
+/* Two-up comparison */
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 1rem; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 1.1rem 1.2rem; display: grid; gap: 0.6rem; align-content: start; min-width: 0; }
+.card h3 { font-size: 1.05rem; }
+.card .tag { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.card .tag.ok { color: var(--risk-low); }
+.card .tag.partial { color: var(--risk-med); }
+
+/* Checklist */
+.phases { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: 1rem; }
+.phase { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 1.1rem 1.2rem; display: grid; gap: 0.75rem; align-content: start; min-width: 0; }
+.phase ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.5rem; }
+.phase li { display: grid; grid-template-columns: 1rem 1fr; gap: 0.6rem; font-size: 0.95rem; }
+.phase li::before { content: ""; width: 0.8rem; height: 0.8rem; border: 1.5px solid var(--line-strong); border-radius: 2px; margin-top: 0.3rem; }
+
+/* Sources */
+ol.sources { margin: 0; padding-left: 1.4rem; display: grid; gap: 0.5rem; font-size: 0.92rem; max-width: var(--measure); }
+ol.sources li::marker { font-family: var(--font-mono); color: var(--muted); font-size: 0.85rem; }
+.small { font-size: 0.9rem; color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+@page { size: A4; margin: 16mm 14mm 18mm; @bottom-center { content: counter(page); font-family: "IBM Plex Mono", monospace; font-size: 9pt; color: #586473; } }
+@media print {
+  :root:not([data-theme="light"]), :root[data-theme] {
+    --bg: #ffffff; --bg-sunk: #eceff3; --surface: #ffffff; --ink: #17212c; --muted: #586473;
+    --line: #d6dce4; --line-strong: #9aa6b4; --accent: #1f4e8c; --accent-soft: #e5ecf6;
+    --risk-high: #b42318; --high-soft: #fbe9e7; --risk-med: #a15207; --med-soft: #fcf0e0;
+    --risk-low: #2f6b3a; --low-soft: #e6f2e8; color-scheme: light;
+  }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html { font-size: 10pt; }
+  body { font-size: 1rem; padding-left: 0; padding-right: 0; padding-block: 0; }
+  .phases { grid-template-columns: repeat(3, 1fr); }
+  .keys { grid-template-columns: repeat(2, 1fr); }
+  .masthead { padding-block: 0 1.5rem; }
+  nav.toc a { text-decoration: none; }
+  .fig-scroll, .table-scroll { overflow: visible; }
+  .fig-scroll svg { min-width: 0; }
+  table.register, table.layers, table.evidence { min-width: 0; }
+  table { font-size: 8.8pt; }
+  th, td { padding: 0.45rem 0.55rem; }
+  section { padding-block: 1.6rem 0; }
+  #register { break-before: page; }
+  h2, h3, .head { break-after: avoid; }
+  .head { break-inside: avoid; }
+  figure, tr, .card, .phase, .note, .key { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0 L10 5 L0 10 z"/></marker>
+    <marker id="ahr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah-risk" d="M0 0 L10 5 L0 10 z"/></marker>
+    <marker id="ahm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah-muted" d="M0 0 L10 5 L0 10 z"/></marker>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+<header class="masthead">
+  <span class="eyebrow">Risk review · AI governance</span>
+  <h1>Open-Weight LLM Risk Review</h1>
+  <p class="lede">What an organisation risks when it runs a large language model downloaded from the internet without a control layer around it, and which controls a harness provides.</p>
+  <div class="meta"><span>November 2026</span><span>Audience: management, security, data protection, IT</span></div>
+</header>
+
+<nav class="toc" aria-label="Contents">
+  <span class="eyebrow">Contents</span>
+  <ol>
+    <li><a href="#summary">Summary</a></li>
+    <li><a href="#harness">What a harness is</a></li>
+    <li><a href="#layers">The control layers</a></li>
+    <li><a href="#defaults">Weak defaults to avoid</a></li>
+    <li><a href="#register">Risk register</a></li>
+    <li><a href="#provenance">Context provenance and decision audit</a></li>
+    <li><a href="#origin">Model origin: Chinese open-weight models</a></li>
+    <li><a href="#regulation">Regulatory notes</a></li>
+    <li><a href="#baseline">Minimum control baseline</a></li>
+    <li><a href="#sources">Sources</a></li>
+  </ol>
+</nav>
+
+<section id="summary" aria-labelledby="h-summary">
+  <div class="head"><span class="eyebrow">1</span><h2 id="h-summary">Summary</h2></div>
+  <p class="prose">A language model produces text. Risk appears the moment that text is connected to something that acts: a shell, a file system, a database, a mailbox or the internet. The software that sits between the model and those systems is called a harness. It decides what the model may do, records what it did, and limits the damage when the model is wrong or has been manipulated. A model downloaded from the internet comes without that layer.</p>
+  <div class="keys">
+    <div class="key"><strong>The model proposes, the harness decides</strong><p>Every action passes a policy check that runs in code the organisation controls. Unknown actions are refused or sent to a person, never allowed by default.</p></div>
+    <div class="key"><strong>Prompt injection is not solved</strong><p>No current model reliably ignores instructions hidden in emails, web pages or documents. Limiting what the model can reach is the main defence.</p></div>
+    <div class="key"><strong>Audit what the model saw</strong><p>Every model call should leave a record of the exact context, where each piece came from and how far it can be trusted. Without it, a decision cannot be explained or defended.</p></div>
+    <div class="key"><strong>Treat downloaded weights as untrusted code</strong><p>Model files can execute code when loaded, and model behaviour can contain hidden triggers. Origin and integrity must be checked before use.</p></div>
+    <div class="key"><strong>Origin matters, controls matter more</strong><p>Published tests show some Chinese open-weight models are easier to hijack. The same harness applies to every model; a weaker model needs stricter settings.</p></div>
+  </div>
+</section>
+
+<section id="harness" aria-labelledby="h-harness">
+  <div class="head"><span class="eyebrow">2</span><h2 id="h-harness">What a harness is</h2></div>
+  <div class="prose stack">
+    <p>Harness engineering is the practice of building the environment around a model rather than the model itself. A public tutorial that rebuilds a commercial coding agent from scratch (Khan, 2026) describes four principles: the model makes decisions, tools are the only way it touches the world, context is a managed resource, and permissions are set in configuration rather than scattered through code.</p>
+    <p>For risk management the important consequence is a separation of duties. The model can only ask for an action. Whether that action runs, in what environment, with which rights, and how it is recorded, is decided by code that the organisation owns and can audit.</p>
+  </div>
+  <figure>
+    <div class="fig-scroll">
+      <svg class="dg" viewBox="0 0 960 300" role="img" aria-label="Comparison: without a harness the model acts directly on shell, files, network and email, and hidden instructions in untrusted text reach it unchecked. With a harness the model only proposes actions, a policy gate decides, a person approves risky actions, tools run in a sandbox and every step is written to an append-only log.">
+        <rect class="panel" x="10" y="10" width="455" height="280" rx="8"/>
+        <rect class="panel" x="490" y="10" width="460" height="280" rx="8"/>
+        <text class="t-ttl" x="30" y="40">Bare model</text>
+        <text class="t-lbl" x="30" y="60">Model output goes straight to real systems</text>
+        <rect class="box" x="30" y="120" width="110" height="50" rx="4"/><text x="85" y="150" text-anchor="middle">Prompt + data</text>
+        <rect class="box-risk" x="30" y="205" width="110" height="50" rx="4"/><text x="85" y="226" text-anchor="middle">Untrusted text</text><text class="t-lbl" x="85" y="243" text-anchor="middle">web, email, files</text>
+        <rect class="box" x="185" y="120" width="100" height="50" rx="4"/><text x="235" y="150" text-anchor="middle">Model</text>
+        <line class="edge" x1="140" y1="145" x2="183" y2="145" marker-end="url(#ah)"/>
+        <line class="edge-risk" x1="140" y1="225" x2="200" y2="172" marker-end="url(#ahr)"/>
+        <rect class="box" x="345" y="75" width="100" height="38" rx="4"/><text x="395" y="99" text-anchor="middle">Shell</text>
+        <rect class="box" x="345" y="125" width="100" height="38" rx="4"/><text x="395" y="149" text-anchor="middle">Files</text>
+        <rect class="box" x="345" y="175" width="100" height="38" rx="4"/><text x="395" y="199" text-anchor="middle">Network</text>
+        <rect class="box" x="345" y="225" width="100" height="38" rx="4"/><text x="395" y="249" text-anchor="middle">Email</text>
+        <line class="edge-risk" x1="285" y1="140" x2="343" y2="94" marker-end="url(#ahr)"/>
+        <line class="edge-risk" x1="285" y1="145" x2="343" y2="144" marker-end="url(#ahr)"/>
+        <line class="edge-risk" x1="285" y1="150" x2="343" y2="194" marker-end="url(#ahr)"/>
+        <line class="edge-risk" x1="285" y1="155" x2="343" y2="242" marker-end="url(#ahr)"/>
+
+        <text class="t-ttl" x="510" y="40">Harnessed model</text>
+        <text class="t-lbl" x="510" y="60">The model proposes; the harness decides and records</text>
+        <rect class="box" x="510" y="120" width="100" height="50" rx="4"/><text x="560" y="150" text-anchor="middle">Prompt + data</text>
+        <rect class="box-risk" x="510" y="205" width="100" height="50" rx="4"/><text x="560" y="226" text-anchor="middle">Untrusted text</text><text class="t-lbl" x="560" y="243" text-anchor="middle">labelled as data</text>
+        <rect class="box" x="635" y="120" width="76" height="50" rx="4"/><text x="673" y="150" text-anchor="middle">Model</text>
+        <line class="edge" x1="610" y1="145" x2="633" y2="145" marker-end="url(#ah)"/>
+        <line class="edge" x1="610" y1="222" x2="650" y2="172" marker-end="url(#ah)"/>
+        <rect class="box-accent" x="740" y="120" width="88" height="50" rx="4"/><text x="784" y="150" text-anchor="middle">Policy gate</text>
+        <line class="edge" x1="711" y1="145" x2="738" y2="145" marker-end="url(#ah)"/>
+        <text class="t-lbl" x="724" y="113" text-anchor="middle">proposes</text>
+        <rect class="box-accent" x="740" y="68" width="88" height="28" rx="4"/><text x="784" y="87" text-anchor="middle" style="font-size:12px">Ask a person</text>
+        <line class="edge" x1="784" y1="98" x2="784" y2="118" marker-start="url(#ah)" marker-end="url(#ah)"/>
+        <rect class="box-ok" x="852" y="120" width="88" height="50" rx="4"/><text x="896" y="141" text-anchor="middle">Sandboxed</text><text x="896" y="158" text-anchor="middle">tools</text>
+        <line class="edge" x1="828" y1="145" x2="850" y2="145" marker-end="url(#ah)"/>
+        <text class="t-lbl" x="852" y="112">allowed only</text>
+        <rect class="box" x="635" y="215" width="305" height="40" rx="4"/><text x="787" y="240" text-anchor="middle">Append-only audit log</text>
+        <line class="edge-dash" x1="673" y1="170" x2="673" y2="213" marker-end="url(#ahm)"/>
+        <line class="edge-dash" x1="784" y1="170" x2="784" y2="213" marker-end="url(#ahm)"/>
+        <line class="edge-dash" x1="896" y1="170" x2="896" y2="213" marker-end="url(#ahm)"/>
+      </svg>
+    </div>
+    <figcaption><b>Figure 1.</b> Without a harness, whatever the model writes becomes an action, including actions planted by hidden instructions in untrusted text. With a harness, the model can only propose. A policy gate, a person for risky steps, a sandbox and a log sit between the proposal and the real system.</figcaption>
+  </figure>
+</section>
+
+<section id="layers" aria-labelledby="h-layers">
+  <div class="head"><span class="eyebrow">3</span><h2 id="h-layers">The control layers</h2></div>
+  <p class="prose">The reference architecture in the tutorial groups the harness into six layers. Each layer answers a specific risk. Figure 2 shows how they work together in one cycle of the agent loop.</p>
+  <div class="table-scroll">
+    <table class="layers">
+      <thead><tr><th>Layer</th><th>Components</th><th>Risk it addresses</th></tr></thead>
+      <tbody>
+        <tr><td class="name">Input and trust</td><td>Session management, permission gate with deny, allow and ask rules</td><td>Governance, destructive actions</td></tr>
+        <tr><td class="name">Execution</td><td>Typed tool registry, file snapshots and revert</td><td>Uncontrolled actions, no way to undo</td></tr>
+        <tr><td class="name">Knowledge and context</td><td>Instruction files loaded on demand, context compression, memory on disk</td><td>Drift from the task, context overload, provenance loss</td></tr>
+        <tr><td class="name">Observability</td><td>Event bus with hooks before and after each tool call</td><td>No audit trail, no alerting</td></tr>
+        <tr><td class="name">Multi-agent isolation</td><td>Sub-agents with separate context, message protocol, separate working copies per task</td><td>Agents overwriting or escalating each other</td></tr>
+        <tr><td class="name">Integration</td><td>Runtime for external tool servers (Model Context Protocol)</td><td>Extends reach, and with it the attack surface</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <figure>
+    <div class="fig-scroll">
+      <svg class="dg" viewBox="0 0 960 310" role="img" aria-label="One cycle of a governed agent loop: assemble labelled context, the model proposes an action, a policy check denies, allows or asks a person, allowed actions run in a sandbox with least privilege, and the result returns to the context marked as data. Denied actions are blocked and logged. Every step writes to an event log.">
+        <rect class="box-accent" x="390" y="16" width="160" height="44" rx="4"/><text x="470" y="43" text-anchor="middle">Ask a person</text>
+        <rect class="box-risk" x="610" y="16" width="160" height="44" rx="4"/><text x="690" y="43" text-anchor="middle">Blocked and logged</text>
+
+        <rect class="box" x="20" y="110" width="160" height="60" rx="4"/><text x="100" y="135" text-anchor="middle">Assemble context</text><text class="t-lbl" x="100" y="153" text-anchor="middle">sources labelled by trust</text>
+        <rect class="box" x="205" y="110" width="160" height="60" rx="4"/><text x="285" y="135" text-anchor="middle">Model proposes</text><text class="t-lbl" x="285" y="153" text-anchor="middle">an action</text>
+        <rect class="box-accent" x="390" y="110" width="160" height="60" rx="4"/><text x="470" y="135" text-anchor="middle">Policy check</text><text class="t-lbl" x="470" y="153" text-anchor="middle">deny, allow or ask</text>
+        <rect class="box-ok" x="575" y="110" width="160" height="60" rx="4"/><text x="655" y="135" text-anchor="middle">Run in sandbox</text><text class="t-lbl" x="655" y="153" text-anchor="middle">least privilege, time limit</text>
+        <rect class="box" x="760" y="110" width="160" height="60" rx="4"/><text x="840" y="135" text-anchor="middle">Return result</text><text class="t-lbl" x="840" y="153" text-anchor="middle">marked as data</text>
+
+        <line class="edge" x1="180" y1="140" x2="203" y2="140" marker-end="url(#ah)"/>
+        <line class="edge" x1="365" y1="140" x2="388" y2="140" marker-end="url(#ah)"/>
+        <line class="edge" x1="550" y1="140" x2="573" y2="140" marker-end="url(#ah)"/>
+        <line class="edge" x1="735" y1="140" x2="758" y2="140" marker-end="url(#ah)"/>
+
+        <line class="edge" x1="440" y1="108" x2="440" y2="62" marker-end="url(#ah)"/>
+        <text class="t-lbl" x="434" y="90" text-anchor="end">ask</text>
+        <line class="edge" x1="500" y1="62" x2="500" y2="108" marker-end="url(#ah)"/>
+        <text class="t-lbl" x="506" y="90">approved</text>
+        <line class="edge-risk" x1="540" y1="108" x2="630" y2="62" marker-end="url(#ahr)"/>
+        <text class="t-lbl t-risk" x="596" y="96">deny</text>
+
+        <polyline class="edge" points="840,170 840,212 100,212 100,172" marker-end="url(#ah)"/>
+        <text class="t-lbl" x="378" y="205" text-anchor="middle">next turn</text>
+
+        <rect class="box" x="20" y="250" width="900" height="40" rx="4"/><text x="470" y="275" text-anchor="middle">Event log: full input, output, decision, approver and time for every step</text>
+        <line class="edge-dash" x1="55" y1="170" x2="55" y2="248" marker-end="url(#ahm)"/>
+        <line class="edge-dash" x1="285" y1="170" x2="285" y2="248" marker-end="url(#ahm)"/>
+        <line class="edge-dash" x1="470" y1="170" x2="470" y2="248" marker-end="url(#ahm)"/>
+        <line class="edge-dash" x1="655" y1="170" x2="655" y2="248" marker-end="url(#ahm)"/>
+        <line class="edge-dash" x1="885" y1="170" x2="885" y2="248" marker-end="url(#ahm)"/>
+      </svg>
+    </div>
+    <figcaption><b>Figure 2.</b> One cycle of a governed agent loop. The policy check is the only path from a proposal to an action. Results come back into the context marked as data, so text inside them is not treated as an instruction. Every step is written to a log the model cannot change.</figcaption>
+  </figure>
+</section>
+
+<section id="defaults" aria-labelledby="h-defaults">
+  <div class="head"><span class="eyebrow">4</span><h2 id="h-defaults">Weak defaults to avoid</h2></div>
+  <p class="prose">Having a harness is not enough. The tutorial's own implementation, which is written for teaching, shows how small design choices undo the protection. These are common patterns and useful test cases for any harness an organisation builds or buys.</p>
+  <div class="table-scroll">
+    <table class="layers">
+      <thead><tr><th>Pattern</th><th>What goes wrong</th><th>Better default</th></tr></thead>
+      <tbody>
+        <tr><td class="name">Allow when no rule matches</td><td>Any command nobody thought of runs without a check. In the tutorial, the code allows unmatched commands while its own diagram says they go to a person.</td><td>Deny or ask when no rule matches.</td></tr>
+        <tr><td class="name">Text patterns as security rules</td><td><code>ls &amp;&amp; rm -rf data/</code> matches the "always allow" rule for <code>ls</code> and runs silently. A deny rule for <code>rm -rf /</code> misses <code>rm -rf ~</code>, <code>find / -delete</code> and deletes through a scripting language.</td><td>Allow lists of exact tools and arguments, a parsed command, and a sandbox that limits damage regardless of the command.</td></tr>
+        <tr><td class="name">Hooks that fail open</td><td>A security hook that crashes is logged and skipped, so the action it should have blocked goes ahead.</td><td>A failing security hook blocks the action.</td></tr>
+        <tr><td class="name">Undo that only covers some actions</td><td>Snapshots cover the file-write tool and live in memory. Deletes through the shell are not covered, and all snapshots disappear when the process stops.</td><td>Work on copies or in version control; backups outside the agent's reach.</td></tr>
+        <tr><td class="name">Logs the agent can edit</td><td>The log is a local file in the agent's working folder, and inputs are cut to 60 characters.</td><td>Full inputs, written to append-only storage the agent cannot reach.</td></tr>
+        <tr><td class="name">External tools trusted on sight</td><td>External tool servers are registered automatically. Their tool descriptions go straight into the model's context and can carry instructions.</td><td>An approved list of servers, with descriptions reviewed and pinned.</td></tr>
+        <tr><td class="name">Self-written instructions</td><td>The agent can write a new instruction file and load it, and its memory file is reloaded every session. Injected text can persist this way.</td><td>Instruction and memory changes go through review before they take effect.</td></tr>
+        <tr><td class="name">Shell commands built from model text</td><td>Commands run through a shell with the model's text as input, which the agent's own code review flags as an injection path.</td><td>Call programs with argument lists, inside a sandbox.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note"><p>The tutorial also makes claims about the internals and revenue of the commercial product it imitates, based on what it calls reverse-engineered traces. These claims are not confirmed by the vendor. The tutorial is useful as an illustration of harness patterns, not as a description of any specific product.</p></div>
+</section>
+
+<section id="register" aria-labelledby="h-register">
+  <div class="head"><span class="eyebrow">5</span><h2 id="h-register">Risk register</h2></div>
+  <p class="prose">Scope: a model downloaded from a public repository and connected to tools or company data. The exposure column is an indicative rating for a setup without a harness. Each organisation should rate likelihood and impact against its own use case.</p>
+  <div class="table-scroll">
+    <table class="register">
+      <thead><tr><th>#</th><th>Risk</th><th>Without a harness</th><th>Harness control</th><th>Exposure</th></tr></thead>
+      <tbody>
+        <tr class="group"><th colspan="5">Governance and control</th></tr>
+        <tr><td class="num">1</td><td class="name">Governance</td><td>No policy on what the model may do, no named owner, no approval flow.</td><td>Policy in configuration with deny, allow and ask rules; deny by default; a named owner; policy changes under version control.</td><td><span class="pill high">High</span></td></tr>
+        <tr><td class="num">2</td><td class="name">Destructive actions</td><td>Deleted or overwritten files, forced code pushes, dropped tables, sent emails.</td><td>Human approval for anything irreversible, backups, dry-run mode, separate test and production credentials.</td><td><span class="pill high">High</span></td></tr>
+        <tr><td class="num">3</td><td class="name">Lack of observability</td><td>Nobody can tell what the model did, why, or with which data.</td><td>Hooks before and after every tool call, structured logs with full input and output, alerts.</td><td><span class="pill high">High</span></td></tr>
+        <tr><td class="num">4</td><td class="name">Provenance of actions</td><td>No proof of which model, prompt or person led to a change.</td><td>Append-only logs outside the agent's reach, session IDs, signed commits, a record of who approved what.</td><td><span class="pill high">High</span></td></tr>
+        <tr><td class="num">5</td><td class="name">Excess privilege</td><td>The agent runs with every right of the user or administrator who started it.</td><td>A separate service identity, a sandbox or container, read-only by default.</td><td><span class="pill high">High</span></td></tr>
+
+        <tr class="group"><th colspan="5">Security</th></tr>
+        <tr><td class="num">6</td><td class="name">Prompt injection</td><td>Text in an email, web page, document or tool description becomes a command.</td><td>Tool output treated as data, least privilege, approval for every action that leaves the system.</td><td><span class="pill high">High</span></td></tr>
+        <tr><td class="num">7</td><td class="name">Data exfiltration</td><td>The model sends data out through a download command, a web request or a URL parameter.</td><td>Network egress blocked by default, an allow list of outbound domains, secrets kept out of the context.</td><td><span class="pill high">High</span></td></tr>
+        <tr><td class="num">8</td><td class="name">Secrets exposure</td><td>The model reads keys, tokens or configuration files and repeats them.</td><td>No secrets in the working folder, output scanning, access through a secrets vault.</td><td><span class="pill high">High</span></td></tr>
+        <tr><td class="num">9</td><td class="name">Supply chain</td><td>Model files in the pickle format, and loaders that run code shipped with the model, can execute arbitrary code when loaded.</td><td>Safetensors format only, no remote code execution at load time, loading in an isolated environment.</td><td><span class="pill high">High</span></td></tr>
+        <tr><td class="num">10</td><td class="name">Memory poisoning</td><td>Injected text is saved to memory and reloaded in every later session.</td><td>Reviewed memory writes; nothing the model reads can change its standing instructions.</td><td><span class="pill med">Medium</span></td></tr>
+
+        <tr class="group"><th colspan="5">Model integrity</th></tr>
+        <tr><td class="num">11</td><td class="name">Model provenance</td><td>Unknown origin, a modified re-upload, unclear licence terms.</td><td>Download from the original publisher only, verify hashes, keep a register of model versions and licences.</td><td><span class="pill med">Medium</span></td></tr>
+        <tr><td class="num">12</td><td class="name">Hidden behaviour and backdoors</td><td>Trigger-based behaviour that standard safety training does not remove.</td><td>Cannot be fixed inside the model. Contain it with a sandbox, approval gates and tests on the organisation's own tasks.</td><td><span class="pill med">Medium</span></td></tr>
+        <tr><td class="num">13</td><td class="name">Hallucination and false completion</td><td>The model reports success without evidence.</td><td>Verification steps such as tests and read-back before a task counts as done.</td><td><span class="pill med">Medium</span></td></tr>
+
+        <tr class="group"><th colspan="5">Operations</th></tr>
+        <tr><td class="num">14</td><td class="name">Runaway loops and cost</td><td>Endless loops and uncontrolled compute or token spend.</td><td>Step and time limits, budgets, a kill switch, interrupts.</td><td><span class="pill med">Medium</span></td></tr>
+        <tr><td class="num">15</td><td class="name">Agents interfering</td><td>Parallel agents overwrite each other's work or amplify each other's mistakes.</td><td>Separate working copies, locks, human review before merging.</td><td><span class="pill med">Medium</span></td></tr>
+        <tr><td class="num">16</td><td class="name">Reproducibility and support</td><td>No pinned versions, no vendor patches, no security advisories.</td><td>Pinned model and harness versions, scheduled re-evaluation.</td><td><span class="pill med">Medium</span></td></tr>
+
+        <tr class="group"><th colspan="5">Data, context and decisions</th></tr>
+        <tr><td class="num">17</td><td class="name">No record of what the model saw</td><td>After a bad decision the input cannot be reconstructed.</td><td>Full prompt stored per call with a context manifest (section 6).</td><td><span class="pill high">High</span></td></tr>
+        <tr><td class="num">18</td><td class="name">Lossy or rewritten context</td><td>Summaries and truncation change facts without anyone noticing.</td><td>Summaries keep links to their sources; originals are archived.</td><td><span class="pill med">Medium</span></td></tr>
+        <tr><td class="num">19</td><td class="name">Untraceable sources</td><td>A data point has no ID, version or timestamp.</td><td>Every context item carries source ID, version or hash and retrieval time.</td><td><span class="pill high">High</span></td></tr>
+        <tr><td class="num">20</td><td class="name">Mixed trust levels</td><td>Rules, user requests, internal records and web text all look the same to the model.</td><td>Trust labels and separate channels for instructions and data.</td><td><span class="pill high">High</span></td></tr>
+        <tr><td class="num">21</td><td class="name">Stale data</td><td>A record changed after retrieval, or a summary outlives its source.</td><td>Version checks at decision time, expiry on cached context.</td><td><span class="pill med">Medium</span></td></tr>
+        <tr><td class="num">22</td><td class="name">Access leakage through retrieval</td><td>Search pulls in records the requesting user may not see, and the model repeats them.</td><td>Filter by the end user's rights before records enter the context.</td><td><span class="pill high">High</span></td></tr>
+        <tr><td class="num">23</td><td class="name">Personal data in context and logs</td><td>Full logging creates a new store of personal data.</td><td>Retention limits, access control, minimisation, a data protection impact assessment.</td><td><span class="pill med">Medium</span></td></tr>
+        <tr><td class="num">24</td><td class="name">Unfaithful explanations</td><td>Citations or stated reasoning do not reflect what drove the output.</td><td>Citations checked in code; tests that remove a source and re-run.</td><td><span class="pill med">Medium</span></td></tr>
+        <tr><td class="num">25</td><td class="name">Decisions that cannot be replayed</td><td>A decision cannot be re-run to check it.</td><td>Pinned model, settings, prompt template and stored context.</td><td><span class="pill med">Medium</span></td></tr>
+
+        <tr class="group"><th colspan="5">Compliance</th></tr>
+        <tr><td class="num">26</td><td class="name">Regulatory and contractual</td><td>Personal data in prompts and logs, duties under the EU AI Act, model licence terms.</td><td>Data minimisation, retention rules, impact assessment, licence review (section 8).</td><td><span class="pill high">High</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="provenance" aria-labelledby="h-provenance">
+  <div class="head"><span class="eyebrow">6</span><h2 id="h-provenance">Context provenance and decision audit</h2></div>
+  <div class="prose stack">
+    <p>A model decides on the basis of its context: the rules, the request, the records and the documents placed in front of it for that call. For an audit, two questions matter. What did the model see? And what did it use? The first can be answered completely. The second can only be narrowed down.</p>
+    <p>Many harness features that save cost or context space also remove provenance. The tutorial shows several of them:</p>
+  </div>
+  <div class="table-scroll">
+    <table class="layers">
+      <thead><tr><th>Mechanism</th><th>What happens to provenance</th></tr></thead>
+      <tbody>
+        <tr><td class="name">Context compression</td><td>Older turns are replaced by a summary the model writes itself. Later decisions rest on that summary, with no link back to the original records. The summary can contain errors or injected text, and it is reloaded every session.</td></tr>
+        <tr><td class="name">Sub-agents</td><td>The main agent only receives the sub-agent's final text. The file reads and searches behind it are discarded, so the main decision has no evidence trail.</td></tr>
+        <tr><td class="name">Background notifications</td><td>Results from background tasks are inserted into the conversation as if the user had written them. Tool output then carries the authority of a person, and the log cannot tell the two apart.</td></tr>
+        <tr><td class="name">Instruction files loaded on demand</td><td>Instructions arrive as tool results from files the agent can edit. A log line that says which file was loaded does not say which version.</td></tr>
+        <tr><td class="name">Memory and task files on disk</td><td>Persistent and writable by the agent, with no record of who wrote each line, when, or why.</td></tr>
+        <tr><td class="name">External tool servers</td><td>Data from outside servers enters the context without a source label or trust level.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <figure>
+    <div class="fig-scroll">
+      <svg class="dg" viewBox="0 0 960 395" role="img" aria-label="Context provenance pipeline. Five sources with different trust levels (system rules, user request, internal records, retrieved documents, and untrusted web, email or tool output) pass through a context assembler that filters by the user's access, attaches trust labels, writes a manifest with id, version, hash and time, and stores the full prompt. The model answers with source IDs, a citation check verifies them, decisions about people go to human review, and every stage writes to an append-only audit store.">
+        <text class="t-ttl" x="20" y="24">Context sources</text>
+        <rect class="box" x="20" y="40" width="205" height="44" rx="4"/><text x="32" y="58">System rules</text><text class="t-lbl" x="32" y="75">trust: owner</text>
+        <rect class="box" x="20" y="95" width="205" height="44" rx="4"/><text x="32" y="113">User request</text><text class="t-lbl" x="32" y="130">trust: user</text>
+        <rect class="box" x="20" y="150" width="205" height="44" rx="4"/><text x="32" y="168">Internal records</text><text class="t-lbl" x="32" y="185">trust: verified, access-checked</text>
+        <rect class="box" x="20" y="205" width="205" height="44" rx="4"/><text x="32" y="223">Retrieved documents</text><text class="t-lbl" x="32" y="240">trust: checked, versioned</text>
+        <rect class="box-risk" x="20" y="260" width="205" height="44" rx="4"/><text x="32" y="278">Web, email, tool output</text><text class="t-lbl" x="32" y="295">trust: untrusted, data only</text>
+
+        <rect class="box-accent" x="270" y="90" width="205" height="175" rx="4"/>
+        <text class="t-ttl" x="284" y="115">Context assembler</text>
+        <text x="284" y="145">1. Filter by user's access</text>
+        <text x="284" y="170">2. Attach trust labels</text>
+        <text x="284" y="195">3. Write manifest:</text>
+        <text class="t-lbl" x="298" y="212">source id, version, hash, time</text>
+        <text x="284" y="240">4. Store the full prompt</text>
+
+        <line class="edge" x1="225" y1="62" x2="268" y2="115" marker-end="url(#ah)"/>
+        <line class="edge" x1="225" y1="117" x2="268" y2="145" marker-end="url(#ah)"/>
+        <line class="edge" x1="225" y1="172" x2="268" y2="175" marker-end="url(#ah)"/>
+        <line class="edge" x1="225" y1="227" x2="268" y2="205" marker-end="url(#ah)"/>
+        <line class="edge-risk" x1="225" y1="282" x2="268" y2="240" marker-end="url(#ahr)"/>
+
+        <rect class="box" x="510" y="148" width="96" height="56" rx="4"/><text x="558" y="181" text-anchor="middle">Model</text>
+        <line class="edge" x1="475" y1="176" x2="508" y2="176" marker-end="url(#ah)"/>
+        <rect class="box" x="640" y="148" width="140" height="56" rx="4"/><text x="710" y="172" text-anchor="middle">Answer with</text><text x="710" y="190" text-anchor="middle">source IDs</text>
+        <line class="edge" x1="606" y1="176" x2="638" y2="176" marker-end="url(#ah)"/>
+        <rect class="box-accent" x="812" y="148" width="130" height="56" rx="4"/><text x="877" y="172" text-anchor="middle">Citation check</text><text class="t-lbl" x="877" y="190" text-anchor="middle">IDs exist, quotes match</text>
+        <line class="edge" x1="780" y1="176" x2="810" y2="176" marker-end="url(#ah)"/>
+        <rect class="box" x="812" y="245" width="130" height="50" rx="4"/><text x="877" y="266" text-anchor="middle">Human review</text><text class="t-lbl" x="877" y="283" text-anchor="middle">decisions about people</text>
+        <line class="edge" x1="877" y1="204" x2="877" y2="243" marker-end="url(#ah)"/>
+
+        <rect class="box" x="270" y="335" width="672" height="44" rx="4"/><text x="606" y="362" text-anchor="middle">Append-only audit store: context, manifest, output, check result, reviewer</text>
+        <line class="edge-dash" x1="372" y1="265" x2="372" y2="333" marker-end="url(#ahm)"/>
+        <line class="edge-dash" x1="558" y1="204" x2="558" y2="333" marker-end="url(#ahm)"/>
+        <line class="edge-dash" x1="710" y1="204" x2="710" y2="333" marker-end="url(#ahm)"/>
+        <line class="edge-dash" x1="877" y1="295" x2="877" y2="333" marker-end="url(#ahm)"/>
+      </svg>
+    </div>
+    <figcaption><b>Figure 3.</b> A context pipeline that can be audited. Every source enters with a trust level. The assembler filters by the end user's rights, records a manifest of exactly what went in, and stores the full prompt. Citations in the answer are checked against that manifest before a decision is used, and decisions about people go to a reviewer.</figcaption>
+  </figure>
+
+  <div class="two">
+    <div class="card">
+      <span class="tag ok">Fully solvable</span>
+      <h3>Record what the model saw</h3>
+      <ol class="points">
+        <li><strong>A context manifest for every model call:</strong> source ID, source system, version or hash, retrieval time, trust level and who could access it. Keep the full assembled prompt.</li>
+        <li><strong>Separate instructions from data:</strong> external and tool content goes into marked data blocks. Tool output is never inserted as a user message.</li>
+        <li><strong>Traceable compression:</strong> summaries keep links to their source records and are stored as versioned, derived items. Originals are archived, not deleted.</li>
+        <li><strong>Keep sub-agent evidence:</strong> log each sub-agent's tool calls and sources under the parent session ID.</li>
+        <li><strong>Access checks at retrieval time:</strong> filter records by the end user's rights before they enter the context.</li>
+        <li><strong>Tamper-evident storage:</strong> append-only, hash-chained entries, stored outside the agent's reach, with retention rules and access control.</li>
+        <li><strong>Pin everything needed for replay:</strong> model version, settings, prompt template version, tool versions and the manifest.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <span class="tag partial">Partly solvable</span>
+      <h3>Narrow down what the model used</h3>
+      <ol class="points">
+        <li><strong>Require citations</strong> to source IDs for every factual claim or decision input.</li>
+        <li><strong>Verify citations in code:</strong> each cited ID must appear in the manifest, and quoted text must appear in that source. Flag or reject answers that fail.</li>
+        <li><strong>Leave-one-out tests</strong> for decisions that matter: re-run without a given source and check whether the outcome changes. This shows which data actually drove the decision.</li>
+        <li><strong>Do not treat stated reasoning as an audit trail.</strong> Research on reasoning models shows they do not always state the real basis for an answer. Use it as a hint, not as evidence.</li>
+        <li><strong>Human review for decisions about people</strong>, with the cited sources visible to the reviewer.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section id="origin" aria-labelledby="h-origin">
+  <div class="head"><span class="eyebrow">7</span><h2 id="h-origin">Model origin: Chinese open-weight models</h2></div>
+  <div class="prose stack">
+    <p>Prompt injection affects every current language model, whatever its origin. The question is whether some models are measurably easier to manipulate, and whether origin changes the data-breach picture. Published tests point to an additional risk for at least one family of Chinese models.</p>
+  </div>
+  <div class="table-scroll">
+    <table class="evidence">
+      <thead><tr><th>Study</th><th>Finding</th><th>How to read it</th></tr></thead>
+      <tbody>
+        <tr><td class="name">NIST CAISI, September 2025</td><td>Agents built on DeepSeek's most secure model tested (R1-0528) were on average 12 times more likely than the US frontier models tested to follow malicious instructions that hijacked them away from the user's task.</td><td>Hijacking is the mechanism behind data exfiltration and unwanted actions. This is the most direct evidence of added agent risk.</td></tr>
+        <tr><td class="name">Cisco and University of Pennsylvania, early 2025</td><td>An automated jailbreak got harmful answers from DeepSeek R1 on all 50 sampled HarmBench prompts.</td><td>The same test gave 96% for Llama 3.1-405B and 86% for GPT-4o. Weak resistance is common among models in general, and DeepSeek R1 scored worst.</td></tr>
+        <tr><td class="name">CrowdStrike, 2025</td><td>DeepSeek-R1 wrote less secure code when a prompt mentioned topics such as Tibet, Uyghurs or Falun Gong. Coverage reports up to 50% more severe vulnerabilities.</td><td>Content rules applied in training can change technical output in ways a user would not expect. Figures come from press coverage of the study.</td></tr>
+        <tr><td class="name">Anthropic and others, "Sleeper Agents", 2024</td><td>Deliberately planted trigger behaviour survived standard safety training, and adversarial training sometimes hid it better.</td><td>Applies to any unverified weights. It shows that testing alone may not reveal a backdoor.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose small">These findings concern DeepSeek models. Other Chinese model families were not covered by the studies listed here and should not be judged on these results.</p>
+
+  <figure>
+    <div class="fig-scroll">
+      <svg class="dg" viewBox="0 0 960 280" role="img" aria-label="Hosted API versus local weights. With a hosted API, prompts, files and personal data cross a jurisdiction boundary to provider servers on every request. With local weights inside the organisation, data can only leave through an egress gate that denies by default; the loader code for the model file is a separate risk.">
+        <rect class="panel" x="10" y="10" width="455" height="260" rx="8"/>
+        <rect class="panel" x="490" y="10" width="460" height="260" rx="8"/>
+        <text class="t-ttl" x="30" y="40">Hosted API</text>
+        <text class="t-lbl" x="30" y="60">Every request leaves the organisation</text>
+        <rect class="boundary" x="30" y="85" width="175" height="135" rx="6"/>
+        <text class="t-lbl" x="42" y="104">Your organisation</text>
+        <text x="117" y="150" text-anchor="middle">Prompts, files,</text>
+        <text x="117" y="168" text-anchor="middle">personal data</text>
+        <line class="boundary" x1="245" y1="75" x2="245" y2="235"/>
+        <text class="t-lbl" x="245" y="252" text-anchor="middle">jurisdiction boundary</text>
+        <rect class="box-risk" x="290" y="110" width="160" height="85" rx="4"/>
+        <text x="370" y="140" text-anchor="middle">Provider servers</text>
+        <text class="t-lbl" x="370" y="160" text-anchor="middle">provider's law and</text>
+        <text class="t-lbl" x="370" y="176" text-anchor="middle">retention policy</text>
+        <line class="edge-risk" x1="205" y1="152" x2="288" y2="152" marker-end="url(#ahr)"/>
+
+        <text class="t-ttl" x="510" y="40">Local weights</text>
+        <text class="t-lbl" x="510" y="60">Data leaves only through paths the organisation opens</text>
+        <rect class="boundary" x="510" y="78" width="300" height="172" rx="6"/>
+        <text class="t-lbl" x="522" y="97">Your organisation</text>
+        <rect class="box" x="528" y="115" width="110" height="46" rx="4"/><text x="583" y="143" text-anchor="middle">Model weights</text>
+        <rect class="box-accent" x="668" y="115" width="124" height="46" rx="4"/><text x="730" y="136" text-anchor="middle">Harness and</text><text x="730" y="152" text-anchor="middle">tools</text>
+        <line class="edge" x1="638" y1="138" x2="666" y2="138" marker-end="url(#ah)"/>
+        <rect class="box-risk" x="528" y="185" width="110" height="46" rx="4"/><text x="583" y="205" text-anchor="middle">Loader code</text><text class="t-lbl" x="583" y="221" text-anchor="middle">runs at load time</text>
+        <line class="edge-risk" x1="583" y1="185" x2="583" y2="163" marker-end="url(#ahr)"/>
+        <rect class="box-ok" x="835" y="115" width="105" height="46" rx="4"/><text x="887" y="136" text-anchor="middle">Egress gate</text><text class="t-lbl" x="887" y="152" text-anchor="middle">deny by default</text>
+        <line class="edge" x1="792" y1="138" x2="833" y2="138" marker-end="url(#ah)"/>
+        <text class="t-lbl" x="887" y="182" text-anchor="middle">allow-listed</text>
+        <text class="t-lbl" x="887" y="197" text-anchor="middle">domains only</text>
+      </svg>
+    </div>
+    <figcaption><b>Figure 4.</b> Hosted and local use carry different data risks. A hosted service receives every prompt under the provider's jurisdiction. Local weights cannot send data out on their own; data leaves only through tools and network paths the harness allows. The loader that reads the model file is a separate risk.</figcaption>
+  </figure>
+
+  <div class="two">
+    <div class="card">
+      <h3>Data breach</h3>
+      <p><strong>Hosted service:</strong> prompts and data are sent to the provider and fall under the provider's jurisdiction. For a Chinese provider that is Chinese law. Check the provider's current privacy policy before any use with personal or confidential data.</p>
+      <p><strong>Local weights:</strong> the extra risk is behavioural. A model that is easier to hijack will more readily use whatever tools and network access it has been given to move data out.</p>
+    </div>
+    <div class="card">
+      <h3>Misalignment and hidden behaviour</h3>
+      <p>Planted trigger behaviour can survive safety training, and this applies to any unverified weights. For models from a jurisdiction where the state can direct companies, the question of who might plant such behaviour is more serious.</p>
+      <p>This review found no public proof of a deliberate backdoor in a Chinese model. What is documented is weaker resistance to hijacking and content rules that affect technical output.</p>
+    </div>
+  </div>
+  <div class="note warn">
+    <p><strong>Recommendation.</strong> A Chinese open-weight model can be acceptable for some uses, but treat it as an untrusted component with stricter harness settings: no network egress, a sandbox without secrets, human approval for every action that leaves the system, and a red-team test on the organisation's own tasks before production. Do not use the hosted service for personal or confidential data.</p>
+  </div>
+</section>
+
+<section id="regulation" aria-labelledby="h-regulation">
+  <div class="head"><span class="eyebrow">8</span><h2 id="h-regulation">Regulatory notes</h2></div>
+  <ul class="points prose">
+    <li><strong>GDPR, Article 22.</strong> Limits decisions based solely on automated processing that have legal or similarly significant effects on a person, and gives the person a right to human intervention and to contest the decision. That right cannot be met without knowing which data a decision used.</li>
+    <li><strong>EU AI Act.</strong> For high-risk systems, Article 10 sets requirements for data and data governance, and Article 12 requires automatic logging of events. AI used in employment and worker management is among the listed high-risk areas. Whether a given use case is high-risk depends on its purpose.</li>
+    <li><strong>Model licences.</strong> Open-weight models come with their own licence terms, which can restrict commercial use or require attribution. Record the licence with the model version.</li>
+  </ul>
+  <p class="prose small">These notes are a starting point, not legal advice. Confirm the applicable articles and their scope with legal counsel.</p>
+</section>
+
+<section id="baseline" aria-labelledby="h-baseline">
+  <div class="head"><span class="eyebrow">9</span><h2 id="h-baseline">Minimum control baseline</h2></div>
+  <p class="prose">A practical order of work. Each phase should be complete before the next starts.</p>
+  <div class="phases">
+    <div class="phase">
+      <span class="eyebrow">Phase 1</span><h3>Before a pilot</h3>
+      <ul>
+        <li>Named owner and written policy for what the model may do</li>
+        <li>Model downloaded from the original publisher, hash verified, safetensors format</li>
+        <li>No remote code execution when loading the model</li>
+        <li>Sandbox or container with a separate service identity</li>
+        <li>Network egress blocked by default</li>
+        <li>No secrets or production credentials in reach</li>
+      </ul>
+    </div>
+    <div class="phase">
+      <span class="eyebrow">Phase 2</span><h3>Before connecting company data</h3>
+      <ul>
+        <li>Policy gate that denies or asks when no rule matches</li>
+        <li>Human approval for every irreversible or outbound action</li>
+        <li>Access filtering at retrieval time</li>
+        <li>Context manifest and full prompt stored per model call</li>
+        <li>Append-only audit log outside the agent's reach</li>
+        <li>Data protection impact assessment completed</li>
+      </ul>
+    </div>
+    <div class="phase">
+      <span class="eyebrow">Phase 3</span><h3>Before production</h3>
+      <ul>
+        <li>Prompt injection and hijacking tests on the organisation's own tasks</li>
+        <li>Citation checks for answers that feed decisions</li>
+        <li>Human review for decisions about people</li>
+        <li>Step, time and budget limits with a kill switch</li>
+        <li>Pinned versions of model, harness, prompts and tools</li>
+        <li>Scheduled re-evaluation and log review</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="sources" aria-labelledby="h-sources">
+  <div class="head"><span class="eyebrow">10</span><h2 id="h-sources">Sources</h2></div>
+  <ol class="sources">
+    <li>Khan, F. (2026). <a href="https://levelup.gitconnected.com/building-claude-code-with-harness-engineering-d2e8c0da85f0">Building Claude Code with Harness Engineering</a>. Level Up Coding. Code: <a href="https://github.com/FareedKhan-dev/claude-code-from-scratch">claude-code-from-scratch</a>.</li>
+    <li>NIST Center for AI Standards and Innovation (2025). <a href="https://www.nist.gov/document/caisi-evaluation-deepseek-ai-models-report">Evaluation of DeepSeek AI Models</a>. See also <a href="https://www.techrepublic.com/article/news-deepseek-security-gaps-caisi-study/">TechRepublic coverage</a>.</li>
+    <li>Cisco (2025). <a href="https://blogs.cisco.com/security/evaluating-security-risk-in-deepseek-and-other-frontier-reasoning-models">Evaluating Security Risk in DeepSeek and Other Frontier Reasoning Models</a>. Comparison figures via <a href="https://interestingengineering.com/innovation/deepseek-fail-not-block-harmful-prompt">Interesting Engineering</a>.</li>
+    <li>CrowdStrike research on DeepSeek-R1 and politically sensitive prompts, as reported by <a href="https://venturebeat.com/ai/deepseek-injects-50-more-security-bugs-when-prompted-with-chinese-political">VentureBeat</a> and <a href="https://scworld.com/brief/deepseek-llms-geopolitical-censorship-triggers-security-flaws">SC World</a>.</li>
+    <li>Hubinger, E. et al. (2024). <a href="https://arxiv.org/abs/2401.05566">Sleeper Agents: Training Deceptive LLMs that Persist Through Safety Training</a>. arXiv:2401.05566.</li>
+    <li>JFrog research on malicious models on Hugging Face, as reported by <a href="https://www.darkreading.com/application-security/hugging-face-ai-platform-100-malicious-code-execution-models">Dark Reading</a>; ReversingLabs on evasion of pickle scanning, as reported by <a href="https://www.helpnetsecurity.com/2025/02/10/malicious-ml-models-found-on-hugging-face-hub/">Help Net Security</a>.</li>
+    <li>Regulation (EU) 2016/679 (GDPR), Article 22. Regulation (EU) 2024/1689 (AI Act), Articles 10 and 12 and Annex III.</li>
+  </ol>
+  <p class="prose small">Where a finding is cited through press coverage, the figures should be checked against the original publication before they are quoted.</p>
+</section>
+
+</div>
+</body>
+</html>

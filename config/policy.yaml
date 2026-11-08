@@ -1,0 +1,71 @@
+# The policy gate. The model can only PROPOSE a tool call; this file decides.
+#
+# Evaluation order (see harness/policy/gate.py):
+#   1. any matching "deny" rule  -> DENY
+#   2. any matching "ask" rule   -> ASK a person
+#   3. any matching "allow" rule -> ALLOW
+#   4. nothing matched           -> the default below
+#
+# Conditions under "when" all have to be true for a rule to match:
+#   argv0_in:       first word of a run_command call
+#   path_glob:      the "path" argument matches one of these patterns
+#   url_domain_in:  the host of a fetch_url call
+
+default: deny        # fail closed. Lesson 2 shows what "allow" here would do.
+
+rules:
+  # ---------- deny: never, not even with approval ----------
+  - id: no-secret-files
+    action: deny
+    tool: [read_file, write_file]
+    when:
+      path_glob: ["*.env", "**/.env", "secrets/*", "**/secrets/*", "*.pem"]
+    reason: Secret files stay out of the model's context.
+
+  - id: no-delete-commands
+    action: deny
+    tool: run_command
+    when:
+      argv0_in: [rm, rmdir, shred, dd, mkfs]
+    reason: Deleting is never done by the agent.
+
+  # ---------- ask: a person decides ----------
+  - id: writes-need-approval
+    action: ask
+    tool: write_file
+    reason: Changing files needs a person's OK. A snapshot is kept for undo.
+
+  - id: python-needs-approval
+    action: ask
+    tool: run_command
+    when:
+      argv0_in: [python]
+    reason: Python can do anything the agent user can do.
+
+  - id: outbound-email
+    action: ask
+    tool: send_email
+    reason: Anything that leaves the organisation needs a person's OK.
+
+  - id: web-fetch
+    action: ask
+    tool: fetch_url
+    reason: Outbound requests can carry data out in the URL.
+
+  # ---------- allow: read-only actions ----------
+  - id: read-workspace
+    action: allow
+    tool: [list_files, read_file]
+    reason: Reading inside the workspace is safe.
+
+  - id: read-sources
+    action: allow
+    tool: [search_records, read_inbox]
+    reason: Sources are read-only and access-filtered.
+
+  - id: safe-commands
+    action: allow
+    tool: run_command
+    when:
+      argv0_in: [ls, cat, head, wc, grep]
+    reason: Read-only commands.

@@ -1,0 +1,8 @@
+{
+  "id": "rec-003",
+  "title": "Incident runbook",
+  "version": 1,
+  "updated_at": "2026-06-20",
+  "allowed_roles": ["analyst", "manager"],
+  "content": "When a service is down: check the status page, inform the on-call engineer, and write a short incident note within one hour."
+}

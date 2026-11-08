@@ -1,0 +1,15 @@
+# Lesson 2. Calls that test the policy gate: a secret file, a command that
+# tries shell tricks, a program no rule mentions, and a gap in the policy.
+description: Probe the policy gate.
+steps:
+  - tool: read_file
+    args: {path: secrets/token.env}
+  - tool: run_command
+    args: {argv: ["ls", "&&", "rm", "-rf", "notes.txt"]}
+  - tool: run_command
+    args: {argv: ["tar", "-czf", "backup.tgz", "."]}
+  # A gap in the policy: "cat" is allowed, and the secret-file rule only
+  # covers read_file. The secret_redactor hook is the second layer.
+  - tool: run_command
+    args: {argv: ["cat", "secrets/token.env"]}
+  - say: "Done probing."
